@@ -5,6 +5,8 @@ import Task from './pages/task';
 import Purchase from './pages/purchase';
 import Test from './pages/test';
 import MachineInventory from './pages/machineInventory';
+import SignIn from './pages/signIn';
+import signUp from './pages/signUp';
 
 const App = () => {
   return (
@@ -14,6 +16,8 @@ const App = () => {
         <Route path="/task" element={<Task />} />
         <Route path="/purchase" element={<Purchase />} />
         <Route path="/test" element={<Test />} />
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/signup" element={<signUp />} />
         <Route path="/machineInventory" element={<MachineInventory />} />
       </Routes>
     </Router>

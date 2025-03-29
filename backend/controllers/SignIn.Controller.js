@@ -27,7 +27,13 @@ const SignInController = async (req, res) => {
       }
       res.cookie("token", token, tokenOpt).json({
         message: "Login Successfully!",
-        data: token,
+        data: {token: token,
+               user: {
+                  _id: user._id,
+                  email: user.email,
+                  name: user.name,
+          }
+        },
         success: true,
         error: false,
       })
