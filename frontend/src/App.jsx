@@ -6,7 +6,8 @@ import Purchase from './pages/purchase';
 import Test from './pages/test';
 import MachineInventory from './pages/machineInventory';
 import SignIn from './pages/signIn';
-import signUp from './pages/signUp';
+import SignUp from './pages/signUp';
+import UserDashboard from './pages/UserDashboard';
 
 const App = () => {
   return (
@@ -17,8 +18,9 @@ const App = () => {
         <Route path="/purchase" element={<Purchase />} />
         <Route path="/test" element={<Test />} />
         <Route path="/signin" element={<SignIn />} />
-        <Route path="/signup" element={<signUp />} />
+        <Route path="/signup" element={<SignUp />} />
         <Route path="/machineInventory" element={<MachineInventory />} />
+        <Route path="/userdashboard" element={<UserDashboard/>} />
       </Routes>
     </Router>
   );

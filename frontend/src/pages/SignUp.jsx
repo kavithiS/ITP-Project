@@ -1,14 +1,21 @@
 import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { FiUser, FiMail, FiLock, FiMapPin, FiCalendar, FiImage } from 'react-icons/fi';
 
 const SignUpPage = () => {
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    proPic: '',
+    fName: '',
+    lName: '',
+    address: '',
+    dob: '',
+    gender: '',
     email: '',
-    password: '',
+    pwd: '',
     confirmPassword: '',
-    companyName: '',
-    role: ''
   });
 
   const handleChange = (e) => {
@@ -17,174 +24,314 @@ const SignUpPage = () => {
       ...prevState,
       [name]: value
     }));
+    if (error) setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add your sign-up logic here
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match");
+    setError('');
+    setIsLoading(true);
+
+    // Client-side validation
+    if (formData.pwd !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      setIsLoading(false);
       return;
     }
-    console.log('Sign up attempt:', formData);
+
+    if (formData.pwd.length < 6) {
+      setError("Password must be at least 6 characters long");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:4000/api/user/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          proPic: formData.proPic,
+          fName: formData.fName,
+          lName: formData.lName,
+          address: formData.address,
+          dob: formData.dob,
+          gender: formData.gender,
+          email: formData.email,
+          pwd: formData.pwd,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
+
+      localStorage.setItem('token', data.token); // Assuming backend returns a token
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 py-8">
-      <div className="max-w-md w-full bg-white shadow-md rounded-lg overflow-hidden">
-        <div className="bg-red-100 p-6 text-center">
-          <h2 className="text-2xl font-bold text-red-800">
-            Create Your Account
-          </h2>
-          <p className="text-gray-600 mt-2">
-            Join our Construction Management System
+    <div className="min-h-screen bg-gradient-to-br from-red-50 to-gray-100 flex items-center justify-center px-4 py-8">
+      <div className="max-w-4xl w-full bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row">
+        {/* Left Side - Image/Banner (unchanged) */}
+        <div className="md:w-1/2 bg-gradient-to-br from-red-500 to-red-700 p-12 text-white flex flex-col justify-center">
+          <h1 className="text-4xl font-bold mb-6">Welcome to RedBrick</h1>
+          <p className="text-red-100 text-lg mb-8">
+            Join our platform to manage your construction projects efficiently and effectively.
           </p>
+          <div className="space-y-4">
+            <div className="flex items-center">
+              <div className="bg-red-400/20 p-2 rounded-full mr-4">
+                <FiUser className="w-6 h-6" />
+              </div>
+              <p>Create and manage projects</p>
+            </div>
+            <div className="flex items-center">
+              <div className="bg-red-400/20 p-2 rounded-full mr-4">
+                <FiMapPin className="w-6 h-6" />
+              </div>
+              <p>Collaborate with team members</p>
+            </div>
+          </div>
         </div>
-        
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+
+        {/* Right Side - Form */}
+        <div className="md:w-1/2 p-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-800">Create Account</h2>
+            <p className="text-gray-600 mt-2">Start your journey with us today</p>
+          </div>
+
+          {error && (
+            <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="relative">
+                <label className="text-sm font-medium text-gray-700">First Name</label>
+                <div className="mt-1 relative rounded-md shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiUser className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    name="fName"
+                    value={formData.fName}
+                    onChange={handleChange}
+                    required
+                    className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
+                    placeholder="John"
+                  />
+                </div>
+              </div>
+
+              <div className="relative">
+                <label className="text-sm font-medium text-gray-700">Last Name</label>
+                <div className="mt-1 relative rounded-md shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiUser className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    name="lName"
+                    value={formData.lName}
+                    onChange={handleChange}
+                    required
+                    className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
+                    placeholder="Doe"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="relative">
+              <label className="text-sm font-medium text-gray-700">Profile Picture URL</label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FiImage className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  name="proPic"
+                  value={formData.proPic}
+                  onChange={handleChange}
+                  required
+                  className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
+                  placeholder="https://example.com/image.jpg"
+                />
+              </div>
+            </div>
+
+            <div className="relative">
+              <label className="text-sm font-medium text-gray-700">Address</label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FiMapPin className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  required
+                  className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
+                  placeholder="123 Main St"
+                />
+              </div>
+            </div>
+
+            <div className="relative">
+              <label className="text-sm font-medium text-gray-700">Date of Birth</label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FiCalendar className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="date"
+                  name="dob"
+                  value={formData.dob}
+                  onChange={handleChange}
+                  required
+                  className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
+                />
+              </div>
+            </div>
+
             <div>
-              <label htmlFor="firstName" className="block text-gray-700 mb-2">
-                First Name
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                name="firstName"
-                value={formData.firstName}
+              <label className="text-sm font-medium text-gray-700">Gender</label>
+              <select
+                name="gender"
+                value={formData.gender}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-200"
-                placeholder="Enter first name"
-              />
+                className="mt-1 block w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
+              >
+                <option value="">Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
             </div>
-            <div>
-              <label htmlFor="lastName" className="block text-gray-700 mb-2">
-                Last Name
-              </label>
+
+            <div className="relative">
+              <label className="text-sm font-medium text-gray-700">Email Address</label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FiMail className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
+                  placeholder="you@example.com"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="relative">
+                <label className="text-sm font-medium text-gray-700">Password</label>
+                <div className="mt-1 relative rounded-md shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiLock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="password"
+                    name="pwd"
+                    value={formData.pwd}
+                    onChange={handleChange}
+                    required
+                    className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
+                    placeholder="Create a password"
+                  />
+                </div>
+              </div>
+
+              <div className="relative">
+                <label className="text-sm font-medium text-gray-700">Confirm Password</label>
+                <div className="mt-1 relative rounded-md shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiLock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
+                    placeholder="Confirm your password"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center">
               <input
-                type="text"
-                id="lastName"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
+                id="terms"
+                type="checkbox"
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-200"
-                placeholder="Enter last name"
+                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
               />
+              <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
+                I agree to the <a href="#" className="text-red-600 hover:text-red-500">Terms of Service</a> and{' '}
+                <a href="#" className="text-red-600 hover:text-red-500">Privacy Policy</a>
+              </label>
             </div>
-          </div>
 
-          <div>
-            <label htmlFor="email" className="block text-gray-700 mb-2">
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-200"
-              placeholder="Enter your email"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="companyName" className="block text-gray-700 mb-2">
-              Company Name
-            </label>
-            <input
-              type="text"
-              id="companyName"
-              name="companyName"
-              value={formData.companyName}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-200"
-              placeholder="Enter company name (optional)"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="role" className="block text-gray-700 mb-2">
-              Role
-            </label>
-            <select
-              id="role"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-200"
-            >
-              <option value="">Select your role</option>
-              <option value="project_manager">Project Manager</option>
-              <option value="contractor">Contractor</option>
-              <option value="admin">Administrator</option>
-              <option value="worker">Worker</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-gray-700 mb-2">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-200"
-              placeholder="Create a password"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="confirmPassword" className="block text-gray-700 mb-2">
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-200"
-              placeholder="Confirm your password"
-            />
-          </div>
-
-          <div className="flex items-center">
-            <input
-              id="terms"
-              type="checkbox"
-              required
-              className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-            />
-            <label htmlFor="terms" className="ml-2 block text-gray-900 text-sm">
-              I agree to the Terms of Service and Privacy Policy
-            </label>
-          </div>
-
-          <div>
             <button
               type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              disabled={isLoading}
+              className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white transition-colors
+                ${isLoading 
+                  ? 'bg-red-400 cursor-not-allowed' 
+                  : 'bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500'
+                }`}
             >
-              Sign Up
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Creating your account...
+                </>
+              ) : (
+                'Create Account'
+              )}
             </button>
-          </div>
-          
-          <div className="text-center text-sm text-gray-600">
-            Already have an account?{' '}
-            <a href="#" className="font-medium text-red-600 hover:text-red-500">
-              Sign in
-            </a>
-          </div>
-        </form>
+
+            <p className="text-center text-sm text-gray-600">
+              Already have an account?{' '}
+              <Link to="/signin" className="font-medium text-red-600 hover:text-red-500">
+                Sign in instead
+              </Link>
+            </p>
+          </form>
+        </div>
       </div>
     </div>
   );
