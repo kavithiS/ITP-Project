@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 
 const SignIn = () => {
+  
   const [formData, setFormData] = useState({
     email: "",
     pwd: "",
@@ -47,7 +48,7 @@ const SignIn = () => {
       console.log("Authentication successful:", data);
 
       // Redirect user to dashboard or home page
-      // window.location.href = '/dashboard';
+      window.location.href = "/userdashboard";
     } catch (err) {
       setError(err.message || "An error occurred during sign in");
       console.error("Sign in error:", err);

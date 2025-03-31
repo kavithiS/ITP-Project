@@ -53,6 +53,76 @@ const Homepage = () => {
 
   return (
     <div className="font-sans">
+      <motion.div
+        className="fixed w-4 h-4 bg-red-500 rounded-full pointer-events-none z-50 mix-blend-difference"
+        animate={{
+          x: mousePosition.x - 8,
+          y: mousePosition.y - 8,
+          scale: 1,
+          opacity: 1,
+        }}
+        transition={{ type: "spring", stiffness: 500, damping: 28 }}
+      />
+      {/* Modern Floating Navigation - Add scale animation on scroll */}
+      <motion.nav
+        className={`fixed w-full z-50 transition-all duration-300 ${
+          isScrolled
+            ? "bg-white/80 backdrop-blur-md shadow-lg"
+            : "bg-transparent"
+        }`}
+        animate={{
+          scale: isScrolled ? 0.98 : 1,
+          y: isScrolled ? -10 : 0,
+        }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <motion.img
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                src={logo}
+                alt="REDBRICK Logo"
+                className="w-[100px] h-[100px] object-contain"
+              />
+            </div>
+            <div className="hidden md:flex items-center space-x-8">
+              <a
+                href="/"
+                className="text-gray-800 hover:text-red-600 transition-colors"
+              >
+                Home
+              </a>
+              <a
+                href="/tasks"
+                className="text-gray-800 hover:text-red-600 transition-colors"
+              >
+                Tasks
+              </a>
+              <a
+                href="/services"
+                className="text-gray-800 hover:text-red-600 transition-colors"
+              >
+                Services
+              </a>
+              <a
+                href="/contact"
+                className="text-gray-800 hover:text-red-600 transition-colors"
+              >
+                Contact
+              </a>
+              <a
+                href="/dashboard"
+                className="bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-2 rounded-full hover:shadow-lg transition-all"
+              >
+                Dashboard
+              </a>
+            </div>
+          </div>
+        </div>
+      </motion.nav>
+
       {/* Dynamic Hero Section - Enhanced animations */}
       <section className="relative min-h-screen flex items-center">
         <div className="absolute inset-0 bg-gradient-to-r from-gray-900/90 to-gray-700/90">

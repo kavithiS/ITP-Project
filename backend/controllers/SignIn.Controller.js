@@ -20,7 +20,7 @@ const SignInController = async (req, res) => {
         },
         process.env.TOKEN_SECRET_KEY,
         {
-          expiresIn: "1h",
+          expiresIn: "7d",
         }
       );
       const tokenOpt = {
