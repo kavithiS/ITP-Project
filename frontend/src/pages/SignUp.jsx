@@ -10,6 +10,10 @@ import {
 } from "react-icons/fi";
 
 const SignUpPage = () => {
+  if (localStorage.getItem("authToken")) {
+    window.location.href = "/userdashboard";
+  }
+
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");

@@ -35,6 +35,7 @@ const SignInController = async (req, res) => {
             _id: user._id,
             email: user.email,
             name: user.fName + " " + user.lName,
+            role: user.role,
           },
         },
         success: true,

@@ -38,6 +38,7 @@ const createUser = async (req, res) => {
 
     const userDataObj = {
       ...req.body,
+      role: req.body.role.toUpperCase(),
       pwd: hashPwd,
     };
 
@@ -87,7 +88,7 @@ const getAllUsers = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedData = req.body;
+    const updatedData = { ...req.body, role: req.body.role.toUpperCase() };
 
     const updatedUser = await userModel.findByIdAndUpdate(id, updatedData, {
       new: true,

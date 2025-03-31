@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 
 const SignIn = () => {
-  
+  if (localStorage.getItem("authToken")) {
+    window.location.href = "/userdashboard";
+  }
+
   const [formData, setFormData] = useState({
     email: "",
     pwd: "",
@@ -33,8 +36,8 @@ const SignIn = () => {
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Authentication failed");
+      if (data.error) {
+        throw new Error("Please Check Your Credentials!");
       }
 
       // Store the token or user data in localStorage or context
@@ -43,6 +46,7 @@ const SignIn = () => {
         localStorage.setItem("userID", data.data.user._id);
         localStorage.setItem("userEmail", data.data.user.email);
         localStorage.setItem("userName", data.data.user.name);
+        localStorage.setItem("userRole", data.data.user.role);
       }
 
       console.log("Authentication successful:", data);
