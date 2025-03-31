@@ -1,35 +1,42 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { FiUser, FiMail, FiLock, FiMapPin, FiCalendar, FiImage } from 'react-icons/fi';
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import {
+  FiUser,
+  FiMail,
+  FiLock,
+  FiMapPin,
+  FiCalendar,
+  FiImage,
+} from "react-icons/fi";
 
 const SignUpPage = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    proPic: '',
-    fName: '',
-    lName: '',
-    address: '',
-    dob: '',
-    gender: '',
-    email: '',
-    pwd: '',
-    confirmPassword: '',
+    proPic: "",
+    fName: "",
+    lName: "",
+    address: "",
+    dob: "",
+    gender: "",
+    email: "",
+    pwd: "",
+    confirmPassword: "",
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevState => ({
+    setFormData((prevState) => ({
       ...prevState,
-      [name]: value
+      [name]: value,
     }));
-    if (error) setError('');
+    if (error) setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     // Client-side validation
@@ -46,10 +53,10 @@ const SignUpPage = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:4000/api/user/signup', {
-        method: 'POST',
+      const response = await fetch("http://localhost:4000/api/user/signup", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           proPic: formData.proPic,
@@ -66,13 +73,13 @@ const SignUpPage = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+        throw new Error(data.message || "Registration failed");
       }
 
-      localStorage.setItem('token', data.token); // Assuming backend returns a token
-      navigate('/dashboard');
+      localStorage.setItem("token", data.token); // Assuming backend returns a token
+      navigate("/dashboard");
     } catch (err) {
-      setError(err.message || 'Something went wrong');
+      setError(err.message || "Something went wrong");
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +92,8 @@ const SignUpPage = () => {
         <div className="md:w-1/2 bg-gradient-to-br from-red-500 to-red-700 p-12 text-white flex flex-col justify-center">
           <h1 className="text-4xl font-bold mb-6">Welcome to RedBrick</h1>
           <p className="text-red-100 text-lg mb-8">
-            Join our platform to manage your construction projects efficiently and effectively.
+            Join our platform to manage your construction projects efficiently
+            and effectively.
           </p>
           <div className="space-y-4">
             <div className="flex items-center">
@@ -107,15 +115,25 @@ const SignUpPage = () => {
         <div className="md:w-1/2 p-8">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-800">Create Account</h2>
-            <p className="text-gray-600 mt-2">Start your journey with us today</p>
+            <p className="text-gray-600 mt-2">
+              Start your journey with us today
+            </p>
           </div>
 
           {error && (
             <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  <svg
+                    className="h-5 w-5 text-red-500"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
                 <div className="ml-3">
@@ -126,9 +144,49 @@ const SignUpPage = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="col-span-2 flex justify-center">
+              <div className="relative">
+                <img
+                  src={
+                    formData.proPic ||
+                    "https://th.bing.com/th/id/OIP._oHjxcDbPRe0HSQA1B4SygHaHa?rs=1&pid=ImgDetMain"
+                  }
+                  alt="Profile"
+                  className="w-24 h-24 rounded-full object-cover border-2 border-red-500"
+                  onError={(e) => {
+                    e.target.src =
+                      "https://th.bing.com/th/id/OIP._oHjxcDbPRe0HSQA1B4SygHaHa?rs=1&pid=ImgDetMain";
+                  }}
+                />
+                <input
+                  type="file"
+                  id="proPic"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setFormData({ ...formData, proPic: reader.result });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                <label
+                  htmlFor="proPic"
+                  className="absolute bottom-0 right-0 bg-red-500 text-white p-1 rounded-full cursor-pointer"
+                >
+                  <FiImage className="h-4 w-4" />
+                </label>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="relative">
-                <label className="text-sm font-medium text-gray-700">First Name</label>
+                <label className="text-sm font-medium text-gray-700">
+                  First Name
+                </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <FiUser className="h-5 w-5 text-gray-400" />
@@ -138,6 +196,16 @@ const SignUpPage = () => {
                     name="fName"
                     value={formData.fName}
                     onChange={handleChange}
+                    onKeyDown={(e) => {
+                      if (
+                        /^\d$/.test(e.key) &&
+                        !e.ctrlKey &&
+                        !e.altKey &&
+                        !e.metaKey
+                      ) {
+                        e.preventDefault();
+                      }
+                    }}
                     required
                     className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
                     placeholder="John"
@@ -146,7 +214,9 @@ const SignUpPage = () => {
               </div>
 
               <div className="relative">
-                <label className="text-sm font-medium text-gray-700">Last Name</label>
+                <label className="text-sm font-medium text-gray-700">
+                  Last Name
+                </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <FiUser className="h-5 w-5 text-gray-400" />
@@ -155,6 +225,16 @@ const SignUpPage = () => {
                     type="text"
                     name="lName"
                     value={formData.lName}
+                    onKeyDown={(e) => {
+                      if (
+                        /^\d$/.test(e.key) &&
+                        !e.ctrlKey &&
+                        !e.altKey &&
+                        !e.metaKey
+                      ) {
+                        e.preventDefault();
+                      }
+                    }}
                     onChange={handleChange}
                     required
                     className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
@@ -165,25 +245,9 @@ const SignUpPage = () => {
             </div>
 
             <div className="relative">
-              <label className="text-sm font-medium text-gray-700">Profile Picture URL</label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiImage className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  name="proPic"
-                  value={formData.proPic}
-                  onChange={handleChange}
-                  required
-                  className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
-                  placeholder="https://example.com/image.jpg"
-                />
-              </div>
-            </div>
-
-            <div className="relative">
-              <label className="text-sm font-medium text-gray-700">Address</label>
+              <label className="text-sm font-medium text-gray-700">
+                Address
+              </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <FiMapPin className="h-5 w-5 text-gray-400" />
@@ -201,7 +265,9 @@ const SignUpPage = () => {
             </div>
 
             <div className="relative">
-              <label className="text-sm font-medium text-gray-700">Date of Birth</label>
+              <label className="text-sm font-medium text-gray-700">
+                Date of Birth
+              </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <FiCalendar className="h-5 w-5 text-gray-400" />
@@ -213,12 +279,15 @@ const SignUpPage = () => {
                   onChange={handleChange}
                   required
                   className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
+                  max={new Date().toISOString().split("T")[0]}
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700">Gender</label>
+              <label className="text-sm font-medium text-gray-700">
+                Gender
+              </label>
               <select
                 name="gender"
                 value={formData.gender}
@@ -234,7 +303,9 @@ const SignUpPage = () => {
             </div>
 
             <div className="relative">
-              <label className="text-sm font-medium text-gray-700">Email Address</label>
+              <label className="text-sm font-medium text-gray-700">
+                Email Address
+              </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <FiMail className="h-5 w-5 text-gray-400" />
@@ -253,7 +324,9 @@ const SignUpPage = () => {
 
             <div className="space-y-4">
               <div className="relative">
-                <label className="text-sm font-medium text-gray-700">Password</label>
+                <label className="text-sm font-medium text-gray-700">
+                  Password
+                </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <FiLock className="h-5 w-5 text-gray-400" />
@@ -271,7 +344,9 @@ const SignUpPage = () => {
               </div>
 
               <div className="relative">
-                <label className="text-sm font-medium text-gray-700">Confirm Password</label>
+                <label className="text-sm font-medium text-gray-700">
+                  Confirm Password
+                </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <FiLock className="h-5 w-5 text-gray-400" />
@@ -296,9 +371,18 @@ const SignUpPage = () => {
                 required
                 className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
               />
-              <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
-                I agree to the <a href="#" className="text-red-600 hover:text-red-500">Terms of Service</a> and{' '}
-                <a href="#" className="text-red-600 hover:text-red-500">Privacy Policy</a>
+              <label
+                htmlFor="terms"
+                className="ml-2 block text-sm text-gray-700"
+              >
+                I agree to the{" "}
+                <a href="#" className="text-red-600 hover:text-red-500">
+                  Terms of Service
+                </a>{" "}
+                and{" "}
+                <a href="#" className="text-red-600 hover:text-red-500">
+                  Privacy Policy
+                </a>
               </label>
             </div>
 
@@ -306,27 +390,47 @@ const SignUpPage = () => {
               type="submit"
               disabled={isLoading}
               className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white transition-colors
-                ${isLoading 
-                  ? 'bg-red-400 cursor-not-allowed' 
-                  : 'bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500'
+                ${
+                  isLoading
+                    ? "bg-red-400 cursor-not-allowed"
+                    : "bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                 }`}
             >
               {isLoading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Creating your account...
                 </>
               ) : (
-                'Create Account'
+                "Create Account"
               )}
             </button>
 
             <p className="text-center text-sm text-gray-600">
-              Already have an account?{' '}
-              <Link to="/signin" className="font-medium text-red-600 hover:text-red-500">
+              Already have an account?{" "}
+              <Link
+                to="/signin"
+                className="font-medium text-red-600 hover:text-red-500"
+              >
                 Sign in instead
               </Link>
             </p>
