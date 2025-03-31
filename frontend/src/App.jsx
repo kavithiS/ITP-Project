@@ -7,8 +7,9 @@ import Test from './pages/test';
 import InventoryManagement from './pages/machineInventory';
 import AddMachineForm from './pages/addMachineForm';
 import SignIn from './pages/signIn';
-import signUp from './pages/signUp';
 import ExpensesPage from './pages/Expenses';
+import SignUp from './pages/signUp';
+import UserDashboard from './pages/UserDashboard';
 
 function App() {
   return (
@@ -19,10 +20,12 @@ function App() {
         <Route path="/purchase" element={<Purchase />} />
         <Route path="/test" element={<Test />} />
         <Route path="/signin" element={<SignIn />} />
-        <Route path="/signup" element={<signUp />} />
         <Route path="/machineInventory" element={<InventoryManagement />} />
         <Route path="/add-machine" element={<AddMachineForm />} />
         <Route path="/expenses" element={<ExpensesPage />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/machineInventory" element={<MachineInventory />} />
+        <Route path="/userdashboard" element={<UserDashboard/>} />
       </Routes>
     </Router>
   );

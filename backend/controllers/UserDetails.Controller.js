@@ -1,4 +1,4 @@
-import userModel from "../models/User.Model.js";
+    
 
 // Get user details
 const getUserByID = async (req, res) => {
