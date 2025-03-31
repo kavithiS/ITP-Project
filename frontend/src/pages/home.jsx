@@ -1,9 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, useGLTF } from '@react-three/drei';
 import { motion } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
 import logo from '../assets/images/logo.png';
+
+// Add this new component at the top of your file
+function Model() {
+  const { scene } = useGLTF('https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/robot/model.gltf');
+  return <primitive object={scene} scale={2} position={[0, -1, 0]} />;
+}
 
 const Homepage = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -13,12 +23,55 @@ const Homepage = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  // Add fade-up animation variant
+  const fadeUpVariant = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+  };
+
+  // Add stagger container variant
+  const containerVariant = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
+    }
+  };
+
   return (
     <div className="font-sans">
-      {/* Modern Floating Navigation */}
-      <nav className={`fixed w-full z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-white/80 backdrop-blur-md shadow-lg' : 'bg-transparent'
-      }`}>
+      <motion.div
+        className="fixed w-4 h-4 bg-red-500 rounded-full pointer-events-none z-50 mix-blend-difference"
+        animate={{
+          x: mousePosition.x - 8,
+          y: mousePosition.y - 8,
+          scale: 1,
+          opacity: 1
+        }}
+        transition={{ type: "spring", stiffness: 500, damping: 28 }}
+      />
+      {/* Modern Floating Navigation - Add scale animation on scroll */}
+      <motion.nav 
+        className={`fixed w-full z-50 transition-all duration-300 ${
+          isScrolled ? 'bg-white/80 backdrop-blur-md shadow-lg' : 'bg-transparent'
+        }`}
+        animate={{
+          scale: isScrolled ? 0.98 : 1,
+          y: isScrolled ? -10 : 0
+        }}
+        transition={{ duration: 0.3 }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -41,9 +94,9 @@ const Homepage = () => {
             </div>
           </div>
         </div>
-      </nav>
+      </motion.nav>
 
-      {/* Dynamic Hero Section */}
+      {/* Dynamic Hero Section - Enhanced animations */}
       <section className="relative min-h-screen flex items-center">
         <div className="absolute inset-0 bg-gradient-to-r from-gray-900/90 to-gray-700/90">
           <video
@@ -57,49 +110,127 @@ const Homepage = () => {
           </video>
         </div>
         <div className="container mx-auto px-8 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="max-w-2xl"
-          >
-            <h1 className="text-6xl font-bold mb-6 text-white leading-tight">
-              Transform Your Space With
-              <span className="text-red-500"> REDBRICK</span>
-            </h1>
-            <p className="text-xl text-gray-300 mb-8">
-              Creating Homes , Achieving Dreams
-            </p>
-            <p className="text-xl text-gray-300 mb-8">
-            Our collaboration will help you to have a complete oversight over your project in every growable phase. Don’t wait to inquire.
-            </p>
-            <div className="flex space-x-4">
-              <button className="bg-red-600 text-white px-8 py-4 rounded-full hover:bg-red-700 transition-colors">
-                inquire Name
-              </button>
-              <button className="border-2 border-white text-white px-8 py-4 rounded-full hover:bg-white hover:text-gray-900 transition-colors">
-                Learn More
-              </button>
-            </div>
-          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ 
+                duration: 0.8,
+                type: "spring",
+                stiffness: 100
+              }}
+              className="max-w-2xl"
+            >
+              <motion.h1 
+                className="text-6xl font-bold mb-6 text-white leading-tight"
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2, duration: 0.8 }}
+              >
+                Transform Your Space With
+                <motion.span 
+                  className="text-red-500"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                > REDBRICK</motion.span>
+              </motion.h1>
+              <p className="text-xl text-gray-300 mb-8">
+                Creating Homes , Achieving Dreams
+              </p>
+              <p className="text-xl text-gray-300 mb-8">
+              Our collaboration will help you to have a complete oversight over your project in every growable phase. Don’t wait to inquire.
+              </p>
+              <div className="flex space-x-4">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-gradient-to-r from-red-600 to-red-500 text-white px-8 py-4 rounded-full hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300"
+                >
+                  Inquire Now
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-white/10 backdrop-blur-md border-2 border-white text-white px-8 py-4 rounded-full hover:bg-white hover:text-gray-900 transition-all duration-300"
+                >
+                  Learn More
+                </motion.button>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1 }}
+              className="h-[400px] relative hidden md:block"
+            >
+              <motion.div
+                animate={{ 
+                  y: [0, -20, 0],
+                  rotateZ: [0, 5, 0]
+                }}
+                transition={{
+                  duration: 4,
+                  ease: "easeInOut",
+                  repeat: Infinity,
+                }}
+                className="w-full h-full"
+              >
+                <svg
+                  viewBox="0 0 200 200"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-full h-full"
+                >
+                  <path
+                    fill="#FF0066"
+                    d="M47.4,-51.2C59.4,-35.3,66.1,-17.7,65.4,-0.7C64.7,16.3,56.6,32.6,44.6,44.7C32.6,56.8,16.3,64.7,-0.9,65.6C-18.1,66.5,-36.2,60.4,-48.4,48.3C-60.6,36.2,-66.9,18.1,-65.8,1.1C-64.7,-15.9,-56.2,-31.8,-44,-44.8C-31.8,-57.8,-15.9,-67.9,0.9,-68.8C17.7,-69.7,35.3,-51.2,47.4,-51.2Z"
+                    transform="translate(100 100)"
+                  >
+                    <animate
+                      attributeName="d"
+                      dur="10s"
+                      repeatCount="indefinite"
+                      values="M47.4,-51.2C59.4,-35.3,66.1,-17.7,65.4,-0.7C64.7,16.3,56.6,32.6,44.6,44.7C32.6,56.8,16.3,64.7,-0.9,65.6C-18.1,66.5,-36.2,60.4,-48.4,48.3C-60.6,36.2,-66.9,18.1,-65.8,1.1C-64.7,-15.9,-56.2,-31.8,-44,-44.8C-31.8,-57.8,-15.9,-67.9,0.9,-68.8C17.7,-69.7,35.3,-51.2,47.4,-51.2Z;
+                             M47.4,-51.2C59.4,-35.3,66.1,-17.7,65.4,-0.7C64.7,16.3,56.6,32.6,44.6,44.7C32.6,56.8,16.3,64.7,-0.9,65.6C-18.1,66.5,-36.2,60.4,-48.4,48.3C-60.6,36.2,-66.9,18.1,-65.8,1.1C-64.7,-15.9,-56.2,-31.8,-44,-44.8C-31.8,-57.8,-15.9,-67.9,0.9,-68.8C17.7,-69.7,35.3,-51.2,47.4,-51.2Z;
+                             M47.4,-51.2C59.4,-35.3,66.1,-17.7,65.4,-0.7C64.7,16.3,56.6,32.6,44.6,44.7C32.6,56.8,16.3,64.7,-0.9,65.6C-18.1,66.5,-36.2,60.4,-48.4,48.3C-60.6,36.2,-66.9,18.1,-65.8,1.1C-64.7,-15.9,-56.2,-31.8,-44,-44.8C-31.8,-57.8,-15.9,-67.9,0.9,-68.8C17.7,-69.7,35.3,-51.2,47.4,-51.2Z"
+                    />
+                  </path>
+                </svg>
+              </motion.div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* Modern Features Grid */}
-      <section className="py-20 bg-gray-50">
+      {/* Modern Features Grid - Enhanced with scroll animations */}
+      <motion.section 
+        className="py-20 bg-gray-50"
+        variants={containerVariant}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+      >
         <div className="container mx-auto px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[1, 2, 3].map((item) => (
               <motion.div
                 key={item}
-                whileHover={{ scale: 1.05 }}
-                className="bg-white p-8 rounded-2xl shadow-xl"
+                variants={fadeUpVariant}
+                whileHover={{ 
+                  scale: 1.05,
+                  backdropFilter: "blur(20px)",
+                }}
+                className="bg-white/80 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-white/20"
               >
-                <div className="w-14 h-14 bg-red-500 rounded-xl flex items-center justify-center mb-6">
+                <motion.div 
+                  className="w-14 h-14 bg-red-500 rounded-xl flex items-center justify-center mb-6"
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.6 }}
+                >
                   <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
-                </div>
+                </motion.div>
                 <h3 className="text-xl font-bold mb-4">Feature Title</h3>
                 <p className="text-gray-600">
                   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore.
@@ -108,10 +239,15 @@ const Homepage = () => {
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* Why Trust Us Section */}
-      <section className="py-16">
+      {/* Why Trust Us Section - Add parallax effect */}
+      <motion.section 
+        className="py-16"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+      >
         <div className="container mx-auto px-8">
           <h2 className="text-3xl font-bold text-center mb-8">Why our clients trust us</h2>
           <p className="text-gray-600 text-center max-w-4xl mx-auto mb-12">
@@ -185,7 +321,7 @@ const Homepage = () => {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Happy Clients Section */}
       <section className="py-16 bg-gray-50">

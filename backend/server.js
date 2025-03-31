@@ -6,6 +6,8 @@ import cookieParser from 'cookie-parser'
 import equipmentRoutes from './routes/equipmentRoutes.js';  
 import purchases from './routes/purchases.js';// Change to .js extension
 import router from './routes/index.routes.js';
+import taskRoutes from './routes/taskRoutes.js';
+import expenseRoutes from './routes/expenseRoutes.js';
 
 dotenv.config()
 
@@ -27,6 +29,8 @@ connectDB();
 app.use('/api/equipment', equipmentRoutes); 
 app.use('/api/purchases',purchases);// Add /api prefix to match frontend URL
 app.use("/api/user",router)
+app.use('/api/tasks', taskRoutes);
+app.use('/api/expenses', expenseRoutes);
 
 app.get('/', (req, res) => {
     res.send('API Working');
