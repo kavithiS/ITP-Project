@@ -1,4 +1,64 @@
 import userModel from "../models/User.Model.js";
+import bcrypt from "bcryptjs";
+
+// Create new user
+const createUser = async (req, res) => {
+  try {
+    const {
+      proPic,
+      fName,
+      lName,
+      address,
+      dob,
+      gender,
+      email,
+      pwd,
+      role,
+      status,
+    } = req.body;
+
+    console.log(req.body);
+
+    if (
+      !fName.trim() ||
+      !lName.trim() ||
+      !address.trim() ||
+      !dob.trim() ||
+      !gender.trim() ||
+      !role.trim() ||
+      !email.trim() ||
+      !status.trim() ||
+      !pwd.trim()
+    ) {
+      throw new Error("Please Provide All Information!");
+    }
+
+    const salt = bcrypt.genSaltSync(10);
+    const hashPwd = bcrypt.hashSync(pwd, salt);
+
+    const userDataObj = {
+      ...req.body,
+      pwd: hashPwd,
+    };
+
+    const userData = new userModel(userDataObj);
+    const saveUser = await userData.save();
+
+    res.status(201).json({
+      data: saveUser,
+      success: true,
+      error: false,
+      message: "User Created Successfully!",
+    });
+  } catch (err) {
+    res.status(400).json({
+      message:
+        err.message || "An error occurred while processing your request.",
+      error: true,
+      success: false,
+    });
+  }
+};
 
 // Get user details
 const getUserByID = async (req, res) => {
@@ -77,4 +137,4 @@ const deleteUser = async (req, res) => {
   }
 };
 
-export { getUserByID, getAllUsers, updateUser, deleteUser };
+export { getUserByID, getAllUsers, updateUser, deleteUser, createUser };

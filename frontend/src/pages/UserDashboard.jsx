@@ -39,10 +39,18 @@ const UserDashboard = () => {
       });
       const formattedUsers = response.data.data.map((user) => ({
         _id: user._id,
+        proPic: user.proPic,
         name: `${user.fName} ${user.lName}`,
-        email: user.email,
+        fName: user.fName,
+        lName: user.lName,
+        address: user.address,
+        dob: user.dob,
         role: user.role,
-        status: "Active",
+        gender: user.gender,
+        email: user.email,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        status: "Active", // You might want to get this from backend if it exists
       }));
       setUsers(formattedUsers);
     } catch (error) {
@@ -55,6 +63,22 @@ const UserDashboard = () => {
       field.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
+
+  const handleTemplateDownload = () => {
+    const headers =
+      "fName,lName,email,role,gender,address,dob,createdAt,updatedAt,status\n";
+    const exampleRow =
+      "John,Doe,john.doe@example.com,Admin,Male,123 Main St,1990-01-01,2023-01-01,2023-01-01,Active\n";
+    const csvContent = headers + exampleRow;
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "import_template.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
 
   const handleOpenModal = (user = null) => {
     setEditingUser(user);
@@ -85,9 +109,9 @@ const UserDashboard = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
-        await axios.post(`${API_URL}/signup`, {
+        await axios.post(`${API_URL}/user-details/create`, {
           ...newUser,
-          password: "defaultPassword123",
+          pwd: "defaultPassword123",
         });
       }
       fetchUsers();
@@ -111,8 +135,30 @@ const UserDashboard = () => {
         const newUsers = lines
           .filter((line) => line.trim())
           .map((line) => {
-            const [name, email, role, status] = line.split(",");
-            return { name, email, role, status: status?.trim() || "Active" };
+            const [
+              fName,
+              lName,
+              email,
+              role,
+              gender,
+              address,
+              dob,
+              createdAt,
+              updatedAt,
+              status,
+            ] = line.split(",");
+            return {
+              fName: fName?.trim(),
+              lName: lName?.trim(),
+              email: email?.trim(),
+              role: role?.trim(),
+              gender: gender?.trim(),
+              address: address?.trim(),
+              dob: dob?.trim(),
+              createdAt: createdAt?.trim(),
+              updatedAt: updatedAt?.trim(),
+              status: status?.trim() || "Active",
+            };
           });
 
         await Promise.all(
@@ -136,11 +182,15 @@ const UserDashboard = () => {
   };
 
   const handleCsvExport = () => {
-    const headers = "name,email,role,status\n";
+    const headers =
+      "fName,lName,email,role,gender,address,dob,createdAt,updatedAt,status\n";
     const csvContent =
       headers +
       users
-        .map((user) => `${user.name},${user.email},${user.role},${user.status}`)
+        .map(
+          (user) =>
+            `${user.fName},${user.lName},${user.email},${user.role},${user.gender},${user.address},${user.dob},${user.createdAt},${user.updatedAt},${user.status}`
+        )
         .join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -205,7 +255,20 @@ const UserDashboard = () => {
     },
     { id: 4, title: "Progress Review", date: "2024-04-03", priority: "High" },
   ];
-
+  const tableHeaders = [
+    "Profile Pic",
+    "First Name",
+    "Last Name",
+    "Email",
+    "Role",
+    "Gender",
+    "Address",
+    "DOB",
+    "Created At",
+    "Updated At",
+    "Status",
+    "Actions",
+  ];
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -358,6 +421,12 @@ const UserDashboard = () => {
                 <FiDownload className="mr-1" /> Export CSV
               </button>
               <button
+                onClick={() => handleTemplateDownload()}
+                className="bg-red-500 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-medium shadow-md flex items-center"
+              >
+                <FiDownload className="mr-1" /> Download Template
+              </button>
+              <button
                 onClick={() => handleOpenModal()}
                 className="bg-red-500 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-medium shadow-md"
               >
@@ -374,139 +443,288 @@ const UserDashboard = () => {
             className="w-full p-3 mb-4 border border-gray-300 rounded-lg bg-white focus:ring-red-500 focus:border-red-500 shadow-sm"
           />
 
-          <table className="w-full text-left border-collapse rounded-lg overflow-hidden shadow-md">
-            <thead className="bg-red-300">
-              <tr>
-                {["Name", "Email", "Role", "Status", "Actions"].map(
-                  (header) => (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse rounded-lg overflow-hidden shadow-md">
+              <thead className="bg-red-300">
+                <tr>
+                  {tableHeaders.map((header) => (
                     <th
                       key={header}
                       className="px-6 py-3 text-sm font-semibold text-red-900"
                     >
                       {header}
                     </th>
-                  )
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
-                  <tr
-                    key={user._id}
-                    className="border-b hover:bg-red-100 transition"
-                  >
-                    <td className="px-6 py-4 text-gray-800 font-medium">
-                      {user.name}
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">{user.email}</td>
-                    <td className="px-6 py-4 text-gray-600">{user.role}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${
-                          user.status === "Active"
-                            ? "bg-green-300 text-green-900"
-                            : "bg-red-300 text-red-900"
-                        }`}
-                      >
-                        {user.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => handleOpenModal(user)}
-                        className="text-blue-700 hover:text-blue-900 mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(user._id)}
-                        className="text-red-700 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <tr
+                      key={user._id}
+                      className="border-b hover:bg-red-100 transition"
+                    >
+                      <td className="px-6 py-4">
+                        <img
+                          src={
+                            user.proPic ||
+                            "https://th.bing.com/th/id/OIP._oHjxcDbPRe0HSQA1B4SygHaHa?rs=1&pid=ImgDetMain"
+                          }
+                          alt="Profile"
+                          className="w-10 h-10 rounded-full object-cover"
+                          onError={(e) => {
+                            e.target.src =
+                              "https://th.bing.com/th/id/OIP._oHjxcDbPRe0HSQA1B4SygHaHa?rs=1&pid=ImgDetMain";
+                          }}
+                        />
+                      </td>
+                      <td className="px-6 py-4 text-gray-800 font-medium">
+                        {user.fName}
+                      </td>
+                      <td className="px-6 py-4 text-gray-800 font-medium">
+                        {user.lName}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">{user.email}</td>
+                      <td className="px-6 py-4 text-gray-600">{user.role}</td>
+                      <td className="px-6 py-4 text-gray-600">{user.gender}</td>
+                      <td className="px-6 py-4 text-gray-600">
+                        {user.address}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">
+                        {new Date(user.dob).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">
+                        {new Date(user.updatedAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${
+                            user.status === "Active"
+                              ? "bg-green-300 text-green-900"
+                              : "bg-red-300 text-red-900"
+                          }`}
+                        >
+                          {user.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => handleOpenModal(user)}
+                          className="text-blue-700 hover:text-blue-900 mr-3"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user._id)}
+                          className="text-red-700 hover:text-red-900"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={tableHeaders.length}
+                      className="px-6 py-4 text-center text-gray-700"
+                    >
+                      No users found
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan="5"
-                    className="px-6 py-4 text-center text-gray-700"
-                  >
-                    No users found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+          <div className="relative top-20 mx-auto p-5 border w-[32rem] shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 {editingUser ? "Edit User" : "Add New User"}
               </h3>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    value={newUser.name}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, name: e.target.value })
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={newUser.email}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, email: e.target.value })
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Role
-                  </label>
-                  <input
-                    type="text"
-                    value={newUser.role}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, role: e.target.value })
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Status
-                  </label>
-                  <select
-                    value={newUser.status}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, status: e.target.value })
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2 flex justify-center">
+                    <div className="relative">
+                      <img
+                        src={
+                          newUser.proPic ||
+                          "https://th.bing.com/th/id/OIP._oHjxcDbPRe0HSQA1B4SygHaHa?rs=1&pid=ImgDetMain"
+                        }
+                        alt="Profile"
+                        className="w-24 h-24 rounded-full object-cover border-2 border-red-500"
+                        onError={(e) => {
+                          e.target.src =
+                            "https://th.bing.com/th/id/OIP._oHjxcDbPRe0HSQA1B4SygHaHa?rs=1&pid=ImgDetMain";
+                        }}
+                      />
+                      <input
+                        type="file"
+                        id="proPic"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setNewUser({ ...newUser, proPic: reader.result });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor="proPic"
+                        className="absolute bottom-0 right-0 bg-red-500 text-white p-1 rounded-full cursor-pointer"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newUser.fName || ""}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, fName: e.target.value })
+                      }
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newUser.lName || ""}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, lName: e.target.value })
+                      }
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={newUser.email || ""}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, email: e.target.value })
+                      }
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Role
+                    </label>
+                    <input
+                      type="text"
+                      value={newUser.role || ""}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, role: e.target.value })
+                      }
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Gender
+                    </label>
+                    <select
+                      value={newUser.gender || ""}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, gender: e.target.value })
+                      }
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Date of Birth
+                    </label>
+                    <input
+                      type="date"
+                      value={
+                        newUser.dob
+                          ? new Date(newUser.dob).toISOString().split("T")[0]
+                          : ""
+                      }
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, dob: e.target.value })
+                      }
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Address
+                    </label>
+                    <input
+                      type="text"
+                      value={newUser.address || ""}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, address: e.target.value })
+                      }
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Status
+                    </label>
+                    <select
+                      value={newUser.status || "Active"}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, status: e.target.value })
+                      }
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                    >
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </div>
                 </div>
                 <div className="flex justify-end gap-3">
                   <button
