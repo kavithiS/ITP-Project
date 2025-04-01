@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import logo from '../assets/images/logo.png';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';  // Change this line
+import autoTable from 'jspdf-autotable';
 
 const InventoryManagement = () => {
   const navigate = useNavigate();
