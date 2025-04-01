@@ -10,12 +10,15 @@ import SignIn from "./pages/signIn";
 import ExpensesPage from "./pages/Expenses";
 import SignUp from "./pages/signUp";
 import UserDashboard from "./pages/UserDashboard";
+import LabourAssignment from "./pages/Assign";
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/assign" element={<LabourAssignment />} />
+        
         <Route path="/task" element={<Task />} />
         <Route path="/purchase" element={<Purchase />} />
         <Route path="/test" element={<Test />} />
