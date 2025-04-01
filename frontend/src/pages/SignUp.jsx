@@ -81,7 +81,7 @@ const SignUpPage = () => {
       }
 
       localStorage.setItem("token", data.token); // Assuming backend returns a token
-      navigate("/dashboard");
+      navigate("/signIn");
     } catch (err) {
       setError(err.message || "Something went wrong");
     } finally {
