@@ -35,6 +35,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api', labourAssignmentRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/expenses', expenseRoutes);
 
 app.get('/', (req, res) => {
     res.send('API Working');
