@@ -17,8 +17,6 @@ const createUser = async (req, res) => {
       status,
     } = req.body;
 
-    console.log(req.body);
-
     if (
       !fName.trim() ||
       !lName.trim() ||
