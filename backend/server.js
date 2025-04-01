@@ -8,6 +8,7 @@ import purchases from './routes/purchases.js';// Change to .js extension
 import router from './routes/index.routes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import expenseRoutes from './routes/expenseRoutes.js';
+import labourAssignmentRoutes from './routes/labourAssignmentRoutes.js';
 
 dotenv.config()
 
@@ -31,6 +32,7 @@ app.use('/api/purchases',purchases);// Add /api prefix to match frontend URL
 app.use("/api/user",router)
 app.use('/api/tasks', taskRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api', labourAssignmentRoutes);
 
 app.get('/', (req, res) => {
     res.send('API Working');
