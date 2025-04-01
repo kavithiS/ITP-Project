@@ -11,6 +11,8 @@ import ExpensesPage from "./pages/Expenses";
 import SignUp from "./pages/signUp";
 import UserDashboard from "./pages/UserDashboard";
 import LabourAssignment from "./pages/Assign";
+import AdminDashboard from './pages/AdminDashboard';
+import ProjectDetails from './pages/ProjectDetails';
 
 function App() {
   return (
@@ -18,7 +20,6 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/assign" element={<LabourAssignment />} />
-        
         <Route path="/task" element={<Task />} />
         <Route path="/purchase" element={<Purchase />} />
         <Route path="/test" element={<Test />} />
@@ -29,6 +30,8 @@ function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/machineInventory" element={<InventoryManagement />} />
         <Route path="/userdashboard" element={<UserDashboard />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/projects/:id" element={<ProjectDetails />} />
       </Routes>
     </Router>
   );

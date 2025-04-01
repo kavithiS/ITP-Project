@@ -9,6 +9,7 @@ import router from './routes/index.routes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import expenseRoutes from './routes/expenseRoutes.js';
 import labourAssignmentRoutes from './routes/labourAssignmentRoutes.js';
+import projectRoutes from './routes/projects.js';
 
 dotenv.config()
 
@@ -33,6 +34,7 @@ app.use("/api/user",router)
 app.use('/api/tasks', taskRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api', labourAssignmentRoutes);
+app.use('/api/projects', projectRoutes);
 
 app.get('/', (req, res) => {
     res.send('API Working');
