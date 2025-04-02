@@ -1,10 +1,6 @@
 import React, { useState } from "react";
 
 const SignIn = () => {
-  if (localStorage.getItem("authToken")) {
-    window.location.href = "/userdashboard";
-  }
-
   const [formData, setFormData] = useState({
     email: "",
     pwd: "",
@@ -92,6 +88,7 @@ const SignIn = () => {
                 id="email"
                 name="email"
                 type="email"
+                pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
                 required
                 className="block w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition duration-200"
                 placeholder="Enter your email"
@@ -110,6 +107,7 @@ const SignIn = () => {
                 id="pwd"
                 name="pwd"
                 type="password"
+                title="Password must be at least 8 characters and include uppercase, lowercase, number and special character"
                 required
                 className="block w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition duration-200"
                 placeholder="Enter your password"

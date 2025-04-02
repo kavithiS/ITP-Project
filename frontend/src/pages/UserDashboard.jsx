@@ -11,9 +11,6 @@ import {
 } from "react-icons/fi";
 
 const UserDashboard = () => {
-  if (!localStorage.getItem("authToken")) {
-    window.location.href = "/signIn";
-  }
   if (localStorage.getItem("userRole") !== "ADMIN") {
     window.location.href = "/";
   }
