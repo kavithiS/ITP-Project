@@ -26,6 +26,44 @@ const TaskManager = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredTasks, setFilteredTasks] = useState([]);
+  const [validationErrors, setValidationErrors] = useState({
+    projectCode: '',
+    endDate: '',
+    siteName: '',
+    taskCode: '' // Add this line
+  });
+
+  const validateProjectCode = (value) => {
+    const projectCodeRegex = /^[A-Za-z0-9-/]{3,20}$/;
+    if (!projectCodeRegex.test(value)) {
+      return 'Project code must be 3-20 characters and can only contain letters, numbers, dashes, and slashes';
+    }
+    return '';
+  };
+
+  const validateTaskCode = (value) => {
+    const taskCodeRegex = /^[A-Za-z0-9-/]{3,20}$/;
+    if (!taskCodeRegex.test(value)) {
+      return 'Task code must be 3-20 characters and can only contain letters, numbers, dashes, and slashes';
+    }
+    return '';
+  };
+
+  const validateEndDate = (endDate, startDate) => {
+    if (!endDate || !startDate) return '';
+    if (new Date(endDate) < new Date(startDate)) {
+      return 'End date cannot be before start date';
+    }
+    return '';
+  };
+
+  const validateSiteName = (value) => {
+    const siteNameRegex = /^[A-Za-z0-9\s]+$/;
+    if (!siteNameRegex.test(value)) {
+      return 'Site name can only contain letters, numbers, and spaces';
+    }
+    return '';
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -33,6 +71,33 @@ const TaskManager = () => {
       ...prevState,
       [name]: value
     }));
+
+    // Live validation
+    let error = '';
+    switch (name) {
+      case 'projectCode':
+        error = validateProjectCode(value);
+        setValidationErrors(prev => ({ ...prev, projectCode: error }));
+        break;
+      case 'taskCode':
+        error = validateTaskCode(value);
+        setValidationErrors(prev => ({ ...prev, taskCode: error }));
+        break;
+      case 'endDate':
+        error = validateEndDate(value, formData.startDate);
+        setValidationErrors(prev => ({ ...prev, endDate: error }));
+        break;
+      case 'startDate':
+        error = validateEndDate(formData.endDate, value);
+        setValidationErrors(prev => ({ ...prev, endDate: error }));
+        break;
+      case 'siteName':
+        error = validateSiteName(value);
+        setValidationErrors(prev => ({ ...prev, siteName: error }));
+        break;
+      default:
+        break;
+    }
   };
 
   const fetchTasks = async () => {
@@ -58,6 +123,25 @@ const TaskManager = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check all validations
+    const projectCodeError = validateProjectCode(formData.projectCode);
+    const taskCodeError = validateTaskCode(formData.taskCode);
+    const endDateError = validateEndDate(formData.endDate, formData.startDate);
+    const siteNameError = validateSiteName(formData.siteName);
+
+    setValidationErrors({
+      projectCode: projectCodeError,
+      taskCode: taskCodeError,
+      endDate: endDateError,
+      siteName: siteNameError
+    });
+
+    // If there are any validation errors, don't submit
+    if (projectCodeError || taskCodeError || endDateError || siteNameError) {
+      return;
+    }
+
     setLoading(true);
     setError('');
     setSuccess('');
@@ -183,6 +267,9 @@ const TaskManager = () => {
                   placeholder="Enter project code"
                   required
                 />
+                {validationErrors.projectCode && (
+                  <p className="text-red-500 text-sm mt-1">{validationErrors.projectCode}</p>
+                )}
               </div>
 
               <div>
@@ -196,6 +283,9 @@ const TaskManager = () => {
                   placeholder="Enter task code"
                   required
                 />
+                {validationErrors.taskCode && (
+                  <p className="text-red-500 text-sm mt-1">{validationErrors.taskCode}</p>
+                )}
               </div>
 
               <div>
@@ -258,6 +348,9 @@ const TaskManager = () => {
                   className={inputClassName}
                   required
                 />
+                {validationErrors.endDate && (
+                  <p className="text-red-500 text-sm mt-1">{validationErrors.endDate}</p>
+                )}
               </div>
 
               <div>
@@ -271,6 +364,9 @@ const TaskManager = () => {
                   placeholder="Enter location"
                   required
                 />
+                {validationErrors.siteName && (
+                  <p className="text-red-500 text-sm mt-1">{validationErrors.siteName}</p>
+                )}
               </div>
 
               <div className="col-span-full flex justify-end gap-2">
@@ -413,6 +509,9 @@ const TaskManager = () => {
                     placeholder="Enter project code"
                     required
                   />
+                  {validationErrors.projectCode && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.projectCode}</p>
+                  )}
                 </div>
 
                 {/* Task Code - Renamed Field */}
@@ -423,10 +522,13 @@ const TaskManager = () => {
                     name="taskCode"
                     value={formData.taskCode}
                     onChange={handleInputChange}
-                    className={inputClassName}
+                    className={`${inputClassName} ${validationErrors.taskCode ? 'border-red-500' : ''}`}
                     placeholder="Enter task code"
                     required
                   />
+                  {validationErrors.taskCode && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.taskCode}</p>
+                  )}
                 </div>
 
                 {/* Task Type */}
@@ -493,6 +595,9 @@ const TaskManager = () => {
                     className={inputClassName}
                     required
                   />
+                  {validationErrors.endDate && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.endDate}</p>
+                  )}
                 </div>
 
                 {/* Site Name */}
@@ -507,6 +612,9 @@ const TaskManager = () => {
                     placeholder="Enter location"
                     required
                   />
+                  {validationErrors.siteName && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.siteName}</p>
+                  )}
                 </div>
 
                 {/* Submit Button */}

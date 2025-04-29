@@ -8,11 +8,17 @@ import InventoryManagement from "./pages/machineInventory";
 import AddMachineForm from "./pages/addMachineForm";
 import SignIn from "./pages/signIn";
 import ExpensesPage from "./pages/Expenses";
-import SignUp from "./pages/signUp";
+import SignUp from "./pages/SignUp";
 import UserDashboard from "./pages/UserDashboard";
 import LabourAssignment from "./pages/Assign";
 import AdminDashboard from './pages/AdminDashboard';
 import ProjectDetails from './pages/ProjectDetails';
+import TestBuilding from "./pages/TestBuilding";
+import BuildingPage from "./pages/BuildingPage";
+import ContactUs from "./pages/ContactUs";
+import InquirePage from "./pages/InquirePage";
+import InquiriesPage from "./pages/InquiriesPage";
+import TeamPage from "./pages/TeamPage";
 
 function App() {
   return (
@@ -23,6 +29,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/assign" element={<LabourAssignment />} />
+        <Route path="/building-page" element={<BuildingPage />} />
+        <Route path="/test-building" element={<TestBuilding />} />
         <Route path="/task" element={<Task />} />
         <Route path="/purchase" element={<Purchase />} />
         <Route path="/test" element={<Test />} />
@@ -35,6 +43,10 @@ function App() {
         <Route path="/userdashboard" element={<UserDashboard />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/projects/:id" element={<ProjectDetails />} />
+        <Route path="/contact" element={<ContactUs />} />
+        <Route path="/inquire" element={<InquirePage />} />
+        <Route path="/inquiries" element={<InquiriesPage />} />
+        <Route path="/team" element={<TeamPage />} />
       </Routes>
     </Router>
   );

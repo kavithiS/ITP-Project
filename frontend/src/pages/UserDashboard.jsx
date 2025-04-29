@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom";
 import {
   FiUsers,
   FiTruck,
@@ -8,6 +9,7 @@ import {
   FiCalendar,
   FiDownload,
   FiUpload,
+  FiMessageSquare,
 } from "react-icons/fi";
 
 const UserDashboard = () => {
@@ -261,6 +263,15 @@ const UserDashboard = () => {
     },
     { id: 4, title: "Progress Review", date: "2024-04-03", priority: "High" },
   ];
+
+  const quickLinks = [
+    { name: "Manage Users", path: "/userdashboard" },
+    { name: "Equipment", path: "/machineInventory" },
+    { name: "Tasks", path: "/task" },
+    { name: "Expenses", path: "/expenses" },
+    { name: "Customer Inquiries", path: "/inquiries" },
+  ];
+
   const tableHeaders = [
     "Profile Pic",
     "First Name",
@@ -320,6 +331,22 @@ const UserDashboard = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Quick Access</h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {quickLinks.map((link, index) => (
+              <Link
+                key={index}
+                to={link.path}
+                className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center"
+              >
+                {link.name === "Customer Inquiries" && <FiMessageSquare className="mx-auto mb-2 text-xl text-blue-600" />}
+                <span className="font-medium">{link.name}</span>
+              </Link>
+            ))}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
