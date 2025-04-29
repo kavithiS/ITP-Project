@@ -72,6 +72,55 @@ const ExpensePage = () => {
     }
   };
 
+  const validateField = (name, value) => {
+    let error = '';
+    
+    switch (name) {
+      case 'title':
+        if (value.length < 3) {
+          error = 'Title must be at least 3 characters long';
+        } else if (value.length > 50) {
+          error = 'Title must not exceed 50 characters';
+        }
+        break;
+        
+      case 'amount':
+        if (isNaN(value) || value <= 0) {
+          error = 'Amount must be a positive number';
+        } else if (value > 1000000) {
+          error = 'Amount cannot exceed 1,000,000';
+        }
+        break;
+        
+      case 'date':
+        const selectedDate = new Date(value);
+        const today = new Date();
+        if (selectedDate > today) {
+          error = 'Date cannot be in the future';
+        }
+        break;
+        
+      case 'category':
+        if (value.length < 2) {
+          error = 'Category must be at least 2 characters long';
+        } else if (value.length > 20) {
+          error = 'Category must not exceed 20 characters';
+        }
+        break;
+        
+      case 'description':
+        if (value.length > 200) {
+          error = 'Description must not exceed 200 characters';
+        }
+        break;
+        
+      default:
+        break;
+    }
+    
+    return error;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setNewExpense(prev => ({
@@ -90,49 +139,67 @@ const ExpensePage = () => {
   return (
     <div className="p-4">
       <form onSubmit={handleSubmit} className="mb-4">
-        <input
-          type="text"
-          name="title"
-          value={newExpense.title}
-          onChange={handleChange}
-          placeholder="Expense Title"
-          className="border p-2 mr-2"
-          required
-        />
-        <input
-          type="number"
-          name="amount"
-          value={newExpense.amount}
-          onChange={handleChange}
-          placeholder="Amount"
-          className="border p-2 mr-2"
-          required
-        />
-        <input
-          type="date"
-          name="date"
-          value={newExpense.date}
-          onChange={handleChange}
-          className="border p-2 mr-2"
-          required
-        />
-        <input
-          type="text"
-          name="category"
-          value={newExpense.category}
-          onChange={handleChange}
-          placeholder="Category"
-          className="border p-2 mr-2"
-          required
-        />
-        <textarea
-          name="description"
-          value={newExpense.description}
-          onChange={handleChange}
-          placeholder="Description"
-          className="border p-2 mr-2"
-        />
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
+        <div className="mb-3">
+          <input
+            type="text"
+            name="title"
+            value={newExpense.title}
+            onChange={handleChange}
+            placeholder="Expense Title"
+            className="border p-2 mr-2"
+            required
+          />
+        </div>
+
+        <div className="mb-3">
+          <input
+            type="number"
+            name="amount"
+            value={newExpense.amount}
+            onChange={handleChange}
+            placeholder="Amount"
+            className="border p-2 mr-2"
+            required
+          />
+        </div>
+
+        <div className="mb-3">
+          <input
+            type="date"
+            name="date"
+            value={newExpense.date}
+            onChange={handleChange}
+            className="border p-2 mr-2"
+            required
+          />
+        </div>
+
+        <div className="mb-3">
+          <input
+            type="text"
+            name="category"
+            value={newExpense.category}
+            onChange={handleChange}
+            placeholder="Category"
+            className="border p-2 mr-2"
+            required
+          />
+        </div>
+
+        <div className="mb-3">
+          <textarea
+            name="description"
+            value={newExpense.description}
+            onChange={handleChange}
+            placeholder="Description"
+            className="border p-2 mr-2"
+          />
+        </div>
+
+        <button 
+          type="submit" 
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+        >
           Add Expense
         </button>
       </form>

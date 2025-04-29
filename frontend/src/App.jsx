@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import Home from "./pages/home";
 import Task from "./pages/task";
 import Purchase from "./pages/purchase";
@@ -21,6 +21,31 @@ import InquiriesPage from "./pages/InquiriesPage";
 import TeamPage from "./pages/TeamPage";
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import Expenses from './pages/Expenses';
+import Sidebar from './components/Sidebar';
+import ErrorBoundary from './components/ErrorBoundary';
+
+// Create a wrapper component to handle sidebar logic
+const AppLayout = () => {
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
+
+  return (
+    <div className="flex">
+      {!isHomePage && (
+        <ErrorBoundary>
+          <Sidebar />
+        </ErrorBoundary>
+      )}
+      <main className={`flex-1 ${!isHomePage ? 'ml-64' : ''}`}>
+        <Routes>
+          <Route path="/" element={<Expenses />} />
+          <Route path="/expenses" element={<Expenses />} />
+        </Routes>
+      </main>
+    </div>
+  );
+};
 
 function App() {
   return (
@@ -51,9 +76,11 @@ function App() {
         <Route path="/team" element={<TeamPage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/*" element={<AppLayout />} /> 
       </Routes>
     </Router>
   );
 }
+
 
 export default App;
