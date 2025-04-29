@@ -2,22 +2,27 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/mongodb.js';
+import cookieParser from 'cookie-parser'
+import expenseRoutes from './routes/expenseRoutes.js';
 
-// Load environment variables
-dotenv.config();
+dotenv.config()
 
-// App Config
-const app = express();
+const app = express()
+app.use(cookieParser())
+app.use(cors({
+    origin: true,
+    credentials: true,
+}))
+
+app.use(express.json({ limit: "10mb" })); 
+
 const port = process.env.PORT || 4000;
 
-// Connect to MongoDB
 connectDB();
 
-// Middlewares
-app.use(express.json());
-app.use(cors());
-
 // API Endpoints
+app.use('/api/expenses', expenseRoutes);
+
 app.get('/', (req, res) => {
     res.send('API Working');
 });
