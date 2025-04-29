@@ -1,38 +1,28 @@
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import logo from "../assets/images/logo.png";
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import { Player } from '@lottiefiles/react-lottie-player';
+import yourAnimation from '../assets/images/homemain.json';
+import founderImage from '../assets/images/lahiru-founder.png';
+import dushmanthaImage from '../assets/images/dushmantha.jpg';
+import customerImage from '../assets/images/customer_avatar.png';
+import sameeraImage from '../assets/images/sameera.jpg';
+import Footer from '../components/Footer';
+import Header from '../components/Header';
 
-// Add this new component at the top of your file
-function Model() {
-  const { scene } = useGLTF(
-    "https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/robot/model.gltf"
-  );
-  return <primitive object={scene} scale={2} position={[0, -1, 0]} />;
-}
 
 const Homepage = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  // Create a ref for the features section
+  const featuresRef = useRef(null);
+  
+  // Scroll to features section function
+  const scrollToFeatures = () => {
+    featuresRef.current.scrollIntoView({ behavior: "smooth" });
+  };
 
   // Add fade-up animation variant
   const fadeUpVariant = {
@@ -51,92 +41,60 @@ const Homepage = () => {
     },
   };
 
+  // First, create an array of feature data before the return statement
+  const features = [
+    {
+      icon: (
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+        />
+      ),
+      title: "Design",
+      description: "Discover stunning architecture with our skilled designers and architects, specializing in custom commercial and residential structures."
+    },
+    {
+      icon: (
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+        />
+      ),
+      title: "Building",
+      description: "Your one-stop construction solution! Our expert team handles projects of any scale with pre-construction and construction management services."
+    },
+    {
+      icon: (
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+        />
+      ),
+      title: "Consulting",
+      description: "Get expert building advice with our professional consulting services. We manage budget, timeline, risk, and coordination for your project."
+    }
+  ];
+
   return (
     <div className="font-sans">
-      <motion.div
-        className="fixed w-4 h-4 bg-red-500 rounded-full pointer-events-none z-50 mix-blend-difference"
-        animate={{
-          x: mousePosition.x - 8,
-          y: mousePosition.y - 8,
-          scale: 1,
-          opacity: 1,
-        }}
-        transition={{ type: "spring", stiffness: 500, damping: 28 }}
-      />
-      {/* Modern Floating Navigation - Add scale animation on scroll */}
-      <motion.nav
-        className={`fixed w-full z-50 transition-all duration-300 ${
-          isScrolled
-            ? "bg-white/80 backdrop-blur-md shadow-lg"
-            : "bg-transparent"
-        }`}
-        animate={{
-          scale: isScrolled ? 0.98 : 1,
-          y: isScrolled ? -10 : 0,
-        }}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <motion.img
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                src={logo}
-                alt="REDBRICK Logo"
-                className="w-[100px] h-[100px] object-contain"
-              />
-            </div>
-            <div className="hidden md:flex items-center space-x-8">
-              <a
-                href="/"
-                className="text-gray-800 hover:text-red-600 transition-colors"
-              >
-                Home
-              </a>
-              <a
-                href="/tasks"
-                className="text-gray-800 hover:text-red-600 transition-colors"
-              >
-                Tasks
-              </a>
-              <a
-                href="/services"
-                className="text-gray-800 hover:text-red-600 transition-colors"
-              >
-                Services
-              </a>
-              <a
-                href="/contact"
-                className="text-gray-800 hover:text-red-600 transition-colors"
-              >
-                Contact
-              </a>
-              <a
-                href="/dashboard"
-                className="bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-2 rounded-full hover:shadow-lg transition-all"
-              >
-                Dashboard
-              </a>
-            </div>
-          </div>
-        </div>
-      </motion.nav>
-
+      {/* Header - Now outside and above all sections */}
+      <Header />
+      
       {/* Dynamic Hero Section - Enhanced animations */}
-      <section className="relative min-h-screen flex items-center">
+      <section 
+        className="relative min-h-screen flex flex-col"
+        ref={node => window.heroRef && window.heroRef(node)}
+      >
         <div className="absolute inset-0 bg-gradient-to-r from-gray-900/90 to-gray-700/90">
-          <video
-            className="w-full h-full object-cover mix-blend-overlay"
-            autoPlay
-            muted
-            loop
-            playsInline
-          >
-            <source src="/hero-background.mp4" type="video/mp4" />
-          </video>
         </div>
-        <div className="container mx-auto px-8 relative z-10">
+        
+        <div className="container mx-auto px-8 relative z-10 flex-grow flex items-center mt-[-100px]">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -169,7 +127,7 @@ const Homepage = () => {
               </p>
               <p className="text-xl text-gray-300 mb-8">
                 Our collaboration will help you to have a complete oversight
-                over your project in every growable phase. Don’t wait to
+                over your project in every growable phase. Don't wait to
                 inquire.
               </p>
               <div className="flex space-x-4">
@@ -184,6 +142,7 @@ const Homepage = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="bg-white/10 backdrop-blur-md border-2 border-white text-white px-8 py-4 rounded-full hover:bg-white hover:text-gray-900 transition-all duration-300"
+                  onClick={scrollToFeatures}
                 >
                   Learn More
                 </motion.button>
@@ -191,51 +150,37 @@ const Homepage = () => {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1 }}
-              className="h-[400px] relative hidden md:block"
-            >
-              <motion.div
-                animate={{
-                  y: [0, -20, 0],
-                  rotateZ: [0, 5, 0],
-                }}
-                transition={{
-                  duration: 4,
-                  ease: "easeInOut",
-                  repeat: Infinity,
-                }}
-                className="w-full h-full"
-              >
-                <svg
-                  viewBox="0 0 200 200"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-full h-full"
-                >
-                  <path
-                    fill="#FF0066"
-                    d="M47.4,-51.2C59.4,-35.3,66.1,-17.7,65.4,-0.7C64.7,16.3,56.6,32.6,44.6,44.7C32.6,56.8,16.3,64.7,-0.9,65.6C-18.1,66.5,-36.2,60.4,-48.4,48.3C-60.6,36.2,-66.9,18.1,-65.8,1.1C-64.7,-15.9,-56.2,-31.8,-44,-44.8C-31.8,-57.8,-15.9,-67.9,0.9,-68.8C17.7,-69.7,35.3,-51.2,47.4,-51.2Z"
-                    transform="translate(100 100)"
-                  >
-                    <animate
-                      attributeName="d"
-                      dur="10s"
-                      repeatCount="indefinite"
-                      values="M47.4,-51.2C59.4,-35.3,66.1,-17.7,65.4,-0.7C64.7,16.3,56.6,32.6,44.6,44.7C32.6,56.8,16.3,64.7,-0.9,65.6C-18.1,66.5,-36.2,60.4,-48.4,48.3C-60.6,36.2,-66.9,18.1,-65.8,1.1C-64.7,-15.9,-56.2,-31.8,-44,-44.8C-31.8,-57.8,-15.9,-67.9,0.9,-68.8C17.7,-69.7,35.3,-51.2,47.4,-51.2Z;
-                             M47.4,-51.2C59.4,-35.3,66.1,-17.7,65.4,-0.7C64.7,16.3,56.6,32.6,44.6,44.7C32.6,56.8,16.3,64.7,-0.9,65.6C-18.1,66.5,-36.2,60.4,-48.4,48.3C-60.6,36.2,-66.9,18.1,-65.8,1.1C-64.7,-15.9,-56.2,-31.8,-44,-44.8C-31.8,-57.8,-15.9,-67.9,0.9,-68.8C17.7,-69.7,35.3,-51.2,47.4,-51.2Z;
-                             M47.4,-51.2C59.4,-35.3,66.1,-17.7,65.4,-0.7C64.7,16.3,56.6,32.6,44.6,44.7C32.6,56.8,16.3,64.7,-0.9,65.6C-18.1,66.5,-36.2,60.4,-48.4,48.3C-60.6,36.2,-66.9,18.1,-65.8,1.1C-64.7,-15.9,-56.2,-31.8,-44,-44.8C-31.8,-57.8,-15.9,-67.9,0.9,-68.8C17.7,-69.7,35.3,-51.2,47.4,-51.2Z"
-                    />
-                  </path>
-                </svg>
-              </motion.div>
-            </motion.div>
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  transition={{ duration: 1 }}
+  className="h-[700px] relative hidden md:block mt-[50px]" // Increased height and margin-top
+>
+  <motion.div
+    animate={{
+      y: [0, -20, 0],
+    }}
+    transition={{
+      duration: 4,
+      ease: "easeInOut",
+      repeat: Infinity,
+    }}
+    className="w-full h-full flex items-center justify-center"
+  >
+    <Player
+      src={yourAnimation}
+      loop
+      autoplay
+      className="w-[110%] h-[110%] object-contain" // Increased size to 130%
+    />
+  </motion.div>
+</motion.div>
           </div>
         </div>
       </section>
 
-      {/* Modern Features Grid - Enhanced with scroll animations */}
+      {/* Modern Features Grid */}
       <motion.section
+        ref={featuresRef}
         className="py-20 bg-gray-50"
         variants={containerVariant}
         initial="hidden"
@@ -244,9 +189,9 @@ const Homepage = () => {
       >
         <div className="container mx-auto px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[1, 2, 3].map((item) => (
+            {features.map((feature, index) => (
               <motion.div
-                key={item}
+                key={index}
                 variants={fadeUpVariant}
                 whileHover={{
                   scale: 1.05,
@@ -265,18 +210,12 @@ const Homepage = () => {
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
+                    {feature.icon}
                   </svg>
                 </motion.div>
-                <h3 className="text-xl font-bold mb-4">Feature Title</h3>
-                <p className="text-gray-600">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-                  do eiusmod tempor incididunt ut labore.
+                <h3 className="text-xl font-bold mb-4 text-[#560C06]">{feature.title}</h3>
+                <p className="text-[#560C06]">
+                  {feature.description}
                 </p>
               </motion.div>
             ))}
@@ -284,7 +223,7 @@ const Homepage = () => {
         </div>
       </motion.section>
 
-      {/* Why Trust Us Section - Add parallax effect */}
+      {/* Why Trust Us Section */}
       <motion.section
         className="py-16"
         initial={{ opacity: 0 }}
@@ -292,167 +231,88 @@ const Homepage = () => {
         viewport={{ once: true }}
       >
         <div className="container mx-auto px-8">
-          <h2 className="text-3xl font-bold text-center mb-8">
+          <h2 className="text-3xl font-bold text-center mb-8 text-[#560C06]">
             Why our clients trust us
           </h2>
-          <p className="text-gray-600 text-center max-w-4xl mx-auto mb-12">
-            Lorem ipsum dolor sit amet consectetur. Elementum nisi duis tortor
-            sed. Suspendisse lobortis vitae quis vehicula pellentesque sit id.
-            Urna posuere consequat velit vulputate faucibus pretium arcu
-            accumsan sit. Vel venenatis sapien.
+          <p className="text-[#560C06] text-center max-w-4xl mx-auto mb-12">
+          Welcome to Redbrick! Our mission is to deliver quality, trust, and convenience to clients who want more than just a structure. We don't just build structures; we build relationships. Our directors are involved in every project, and we limit the number of projects we take on each year to ensure we meet our exacting standards. With our focus on transparency, honesty, and integrity, you can trust us to deliver great results that will give you peace of mind. Let's work together to develop your property in any part of Sri Lanka. Contact us today to learn more about our services and how we can help you achieve your goals.
           </p>
 
           <div className="flex flex-col md:flex-row justify-center items-center gap-8">
-            <div className="grid grid-cols-2 gap-6">
-              <div className="bg-gray-200 w-48 h-48 flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-12 w-12 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
+            <div className="flex flex-col items-center">
+              <div className="w-[400px] h-[500px] overflow-hidden rounded-2xl shadow-xl">
+                <img
+                  src={founderImage} // Replace with your founder's image path
+                  alt="Founder"
+                  className="w-full h-full object-cover"
+                />
               </div>
-              <div className="bg-gray-200 w-36 h-36 flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-10 w-10 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <div className="bg-gray-200 w-48 h-24 col-span-2 flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-10 w-10 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
+              <div className="text-center mt-4">
+                <h3 className="text-2xl font-bold text-[#560C06]">Lahiru Thilakarathna</h3> {/* Replace with founder's name */}
+                <p className="text-[#560C06]">(Doctoral Researcher - RMIT)</p>
               </div>
             </div>
 
             <div className="space-y-6 max-w-lg">
-              <div className="flex items-start space-x-4">
-                <div className="rounded-full bg-green-100 p-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-green-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-gray-700">
-                    Lorem ipsum dolor sit amet consectetur. Elementum nisi duis
-                    tortor sed.
+              {/* Quote section */}
+              <div className="flex items-start space-x-4 relative">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#560C06] absolute -left-10 -top-2" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                </svg>
+                <div className="border-l-4 border-[#560C06] pl-4">
+                  <p className="text-[#560C06] text-lg font-medium italic">
+                    Over 15 years of experience in delivering high-quality construction projects across Sri Lanka with 100% client satisfaction.
                   </p>
                 </div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#560C06] absolute -right-10 bottom-0 transform rotate-180" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                </svg>
+              </div>
+
+              {/* Regular points */}
+              <div className="flex items-start space-x-4">
+                <div className="rounded-full bg-green-100 p-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <p className="text-[#560C06]">Expert team of certified architects and engineers</p>
               </div>
 
               <div className="flex items-start space-x-4">
                 <div className="rounded-full bg-green-100 p-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-green-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <div>
-                  <p className="text-gray-700">
-                    Lorem ipsum dolor sit amet consectetur. Elementum nisi duis
-                    tortor sed.
-                  </p>
-                </div>
+                <p className="text-[#560C06]">Transparent pricing and regular project updates</p>
               </div>
 
               <div className="flex items-start space-x-4">
                 <div className="rounded-full bg-green-100 p-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-green-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <div>
-                  <p className="text-gray-700">
-                    Lorem ipsum dolor sit amet consectetur. Elementum nisi duis
-                    tortor sed.
-                  </p>
-                </div>
+                <p className="text-[#560C06]">Sustainable and eco-friendly building solutions</p>
               </div>
 
               <div className="flex items-start space-x-4">
                 <div className="rounded-full bg-green-100 p-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-green-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <div>
-                  <p className="text-gray-700">
-                    Lorem ipsum dolor sit amet consectetur. Elementum nisi duis
-                    tortor sed.
-                  </p>
+                <p className="text-[#560C06]">Third-party quality control inspections</p>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="rounded-full bg-green-100 p-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
                 </div>
+                <p className="text-[#560C06]">Comprehensive warranty on all construction work</p>
               </div>
             </div>
           </div>
@@ -460,222 +320,83 @@ const Homepage = () => {
       </motion.section>
 
       {/* Happy Clients Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-8">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            Our happy clients
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-white p-6 rounded shadow">
-              <p className="text-gray-600 mb-6">
-                Lorem ipsum dolor sit amet consectetur. Condimentum eget vitae
-                ligula sed urna sit sagittis interdum a. Blandit mattis mattis
-                lobortis orci. Facilisis dui sagittis tempor egestas
-                pellentesque eu maecenas. Risus lectus nisl.
-              </p>
-              <div className="flex items-center">
-                <div className="w-12 h-12 rounded-full bg-gray-300 mr-4 overflow-hidden">
-                  <img
-                    src="/avatar1.jpg"
-                    alt="Joshua Alvarez"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div>
-                  <p className="font-medium">Joshua Alvarez</p>
-                  <p className="text-gray-500 text-sm">Customer</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded shadow">
-              <p className="text-gray-600 mb-6">
-                Lorem ipsum dolor sit amet consectetur. Condimentum eget vitae
-                ligula sed urna sit sagittis interdum a. Blandit mattis mattis
-                lobortis orci. Facilisis dui sagittis tempor egestas
-                pellentesque eu maecenas. Risus lectus nisl.
-              </p>
-              <div className="flex items-center">
-                <div className="w-12 h-12 rounded-full bg-gray-300 mr-4 overflow-hidden">
-                  <img
-                    src="/avatar2.jpg"
-                    alt="Walter White"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div>
-                  <p className="font-medium">Walter White</p>
-                  <p className="text-gray-500 text-sm">Customer</p>
-                </div>
-              </div>
-            </div>
+      <section className="py-16 bg-white">
+  <div className="container mx-auto px-8">
+  <h1 className="text-3xl font-bold text-center mb-30 text-[#560C06]">             Our happy clients           </h1>  
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {/* First Testimonial */}
+      <div className="text-center">
+        <div className="flex justify-center mb-4">
+          <div className="w-24 h-24 rounded-full bg-gray-200 overflow-hidden">
+            <img
+              src={sameeraImage}
+              alt="Sameera Deshan"
+              className="w-full h-full object-cover"
+            />
           </div>
         </div>
-      </section>
+        <h3 className="text-xl font-bold text-[#6B1813] mb-2">Sameera Deshan</h3>
+        <div className="mb-4">
+          <p className="text-[#6B1813] italic">
+            " I simply could not let my recently completed house go without properly acknowledging Red Brick Construction's tremendous contribution as the project's contractor. From the early stages of..."
+          </p>
+        </div>
+        <div className="flex justify-center">
+          <span className="text-yellow-400 text-xl">★★★★</span>
+        </div>
+      </div>
 
-      {/* Partners Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-8">
-          <h2 className="text-3xl font-bold text-center mb-12">Our Partners</h2>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="flex justify-center items-center">
-              <img
-                src="/partner1.png"
-                alt="Partner"
-                className="h-12 opacity-50"
-              />
-            </div>
-            <div className="flex justify-center items-center">
-              <img
-                src="/partner2.png"
-                alt="Partner"
-                className="h-12 opacity-50"
-              />
-            </div>
-            <div className="flex justify-center items-center">
-              <img
-                src="/partner3.png"
-                alt="Partner"
-                className="h-12 opacity-50"
-              />
-            </div>
-            <div className="flex justify-center items-center">
-              <img
-                src="/partner4.png"
-                alt="Partner"
-                className="h-12 opacity-50"
-              />
-            </div>
+      {/* Second Testimonial */}
+      <div className="text-center">
+        <div className="flex justify-center mb-4">
+          <div className="w-24 h-24 rounded-full bg-gray-200 overflow-hidden">
+            <img
+              src={dushmanthaImage}
+              alt="Dushmantha"
+              className="w-full h-full object-cover"
+            />
           </div>
         </div>
-      </section>
+        <h3 className="text-xl font-bold text-[#6B1813] mb-2">Dushmantha</h3>
+        <div className="mb-4">
+          <p className="text-[#6B1813] italic">
+            " I had to say that before finalizing the housing contract with Redbrick I requested quotations from different Construction companies out there for a comparison. I found that there is only 1-2 lakh..."
+          </p>
+        </div>
+        <div className="flex justify-center">
+          <span className="text-yellow-400 text-xl">★★★★★</span>
+          
+        </div>
+      </div>
 
-      {/* Footer */}
-      <footer className="bg-white py-12 border-t">
-        <div className="container mx-auto px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <img src="/logo.png" alt="REDBRICK Logo" className="h-10 mb-4" />
-              <p className="text-gray-500 text-sm">
-                Amet minim mollit non deserunt ullamco est sit aliqua dolor do
-                amet sit. Velit officia consequat
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-bold mb-4">Heading</h3>
-              <ul className="space-y-2">
-                <li>
-                  <a href="#" className="text-gray-500 hover:text-gray-900">
-                    Link here
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-500 hover:text-gray-900">
-                    Link here
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-500 hover:text-gray-900">
-                    Link here
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-500 hover:text-gray-900">
-                    Link here
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-bold mb-4">Heading</h3>
-              <ul className="space-y-2">
-                <li>
-                  <a href="#" className="text-gray-500 hover:text-gray-900">
-                    Link here
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-500 hover:text-gray-900">
-                    Link here
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-500 hover:text-gray-900">
-                    Link here
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-500 hover:text-gray-900">
-                    Link here
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-bold mb-4">Connect with us</h3>
-              <div className="flex space-x-4 mb-4">
-                <a
-                  href="#"
-                  className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-gray-500"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z" />
-                  </svg>
-                </a>
-                <a
-                  href="#"
-                  className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-gray-500"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-                  </svg>
-                </a>
-                <a
-                  href="#"
-                  className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-gray-500"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
-                  </svg>
-                </a>
-                <a
-                  href="#"
-                  className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-gray-500"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
-                  </svg>
-                </a>
-              </div>
-            </div>
+      {/* Third Testimonial */}
+      <div className="text-center">
+        <div className="flex justify-center mb-4">
+          <div className="w-24 h-24 rounded-full bg-gray-200 overflow-hidden">
+            <img
+              src={customerImage}
+              alt="Kalpa"
+              className="w-full h-full object-cover"
+            />
           </div>
         </div>
-      </footer>
+        <h3 className="text-xl font-bold text-[#6B1813] mb-2">Kalpa</h3>
+        <div className="mb-4">
+          <p className="text-[#6B1813] italic">
+            " I had to renovate my house which had small bedrooms and an old fashion layout. My wife always had this idea with her to have a huge living room space with dining space with access to the kitche..."
+          </p>
+        </div>
+        <div className="flex justify-center">
+          <span className="text-yellow-400 text-xl">★★★★★</span>
+      
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+      {/* Footer component */}
+      <Footer />
     </div>
   );
 };

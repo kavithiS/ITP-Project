@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import logo from '../assets/images/logo.png';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 const InventoryManagement = () => {
   const navigate = useNavigate();
@@ -138,81 +137,108 @@ const InventoryManagement = () => {
     }
 
     try {
-      // Create PDF document
-      const doc = new jsPDF('landscape');
-      
-      // Add logo
-      // Assuming logo is imported at the top of the file
-      // If you want to add the logo, you'll need to convert it to base64 or use a URL
-      // doc.addImage(logo, 'PNG', 15, 10, 20, 20);
-      
-      // Add title with some spacing
+      // Create PDF document in landscape orientation
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Add title
       doc.setFontSize(16);
       doc.text('Construction Equipment Inventory Report', 15, 20);
       
-      // Add generation date
+      // Add date
       doc.setFontSize(10);
       doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 15, 30);
 
-      // Prepare table data with proper null checks
-      const tableData = filteredMachines.map(machine => [
-        machine.name || 'N/A',
-        machine.type || 'N/A',
-        machine.status || 'N/A',
-        machine.location || 'N/A',
-        machine.status === 'Stocked' 
-          ? `Purchase: ${machine.purchaseDate ? new Date(machine.purchaseDate).toLocaleDateString() : 'N/A'}` 
-          : `Rental: ${machine.rentalStart ? new Date(machine.rentalStart).toLocaleDateString() : 'N/A'}`
-      ]);
-
-      // Generate table with specific styling
-      doc.autoTable({
-        head: [['Equipment Name', 'Type', 'Status', 'Location', 'Date']],
-        body: tableData,
-        startY: 40,
-        theme: 'grid',
-        styles: {
-          fontSize: 8,
-          cellPadding: 3,
-          overflow: 'linebreak',
-          cellWidth: 'wrap'
-        },
-        headStyles: {
-          fillColor: [220, 53, 69], // RedBrick red color
-          textColor: 255,
-          fontSize: 8,
-          fontStyle: 'bold',
-          halign: 'center'
-        },
-        columnStyles: {
-          0: { cellWidth: 50 },
-          1: { cellWidth: 40 },
-          2: { cellWidth: 30 },
-          3: { cellWidth: 40 },
-          4: { cellWidth: 50 }
-        },
-        margin: { top: 40, left: 10, right: 10 }
+      // Manual table creation
+      const startY = 40;
+      const margin = 15;
+      const cellHeight = 10;
+      const columnWidths = [50, 40, 30, 40, 50];
+      const totalWidth = columnWidths.reduce((a, b) => a + b, 0);
+      
+      // Calculate X positions for each column
+      const xPositions = [margin];
+      for (let i = 1; i < columnWidths.length; i++) {
+        xPositions[i] = xPositions[i-1] + columnWidths[i-1];
+      }
+      
+      // Draw header
+      const headers = ['Equipment Name', 'Type', 'Status', 'Location', 'Date'];
+      doc.setFillColor(220, 53, 69);
+      doc.rect(margin, startY, totalWidth, cellHeight, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'bold');
+      
+      headers.forEach((header, index) => {
+        doc.text(header, xPositions[index] + 2, startY + 6);
       });
+      
+      // Draw rows
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+      let currentY = startY + cellHeight;
+      
+      filteredMachines.forEach((machine, idx) => {
+        // Draw row background
+        doc.setFillColor(idx % 2 === 0 ? 255 : 245);
+        doc.rect(margin, currentY, totalWidth, cellHeight, 'F');
+        
+        // Draw cell data
+        const rowData = [
+          machine.name || 'N/A',
+          machine.type || 'N/A',
+          machine.status || 'N/A',
+          machine.location || 'N/A',
+          machine.status === 'Stocked' 
+            ? `Purchase: ${machine.purchaseDate ? new Date(machine.purchaseDate).toLocaleDateString() : 'N/A'}` 
+            : `Rental: ${machine.rentalStart ? new Date(machine.rentalStart).toLocaleDateString() : 'N/A'}`
+        ];
+        
+        rowData.forEach((text, index) => {
+          // Truncate text if too long
+          let displayText = text;
+          if (text.length > 20) {
+            displayText = text.substring(0, 17) + '...';
+          }
+          doc.text(displayText, xPositions[index] + 2, currentY + 6);
+        });
+        
+        currentY += cellHeight;
+        
+        // Add new page if needed
+        if (currentY > doc.internal.pageSize.height - 20) {
+          doc.addPage();
+          currentY = 20;
+        }
+      });
+      
+      // Draw table borders
+      doc.setDrawColor(0);
+      doc.rect(margin, startY, totalWidth, currentY - startY);
+      
+      // Vertical lines
+      for (let i = 1; i < xPositions.length; i++) {
+        doc.line(xPositions[i], startY, xPositions[i], currentY);
+      }
+      
+      // Header separator line
+      doc.line(margin, startY + cellHeight, margin + totalWidth, startY + cellHeight);
 
-      // Save PDF with a formatted filename
+      // Save the PDF
       const fileName = `equipment-inventory-${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(fileName);
       
       setSuccessMessage('PDF downloaded successfully!');
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSuccessMessage('');
-      }, 3000);
+      setTimeout(() => setSuccessMessage(''), 3000);
 
     } catch (error) {
       console.error('PDF generation error:', error);
       setErrorMessage(`Failed to generate PDF: ${error.message}`);
-      
-      // Clear error message after 3 seconds
-      setTimeout(() => {
-        setErrorMessage('');
-      }, 3000);
+      setTimeout(() => setErrorMessage(''), 3000);
     }
   };
 
