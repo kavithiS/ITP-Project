@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = 'http://localhost:5000/api/projects';
+const API_URL = 'http://localhost:4000/api/projects';
 
 // Add these constants at the top of your file
 const PROJECT_NAME_REGEX = /^[a-zA-Z0-9\s-]{3,50}$/;
@@ -16,13 +16,15 @@ const ConstructionDashboard = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
+  const [startDateDisabled, setStartDateDisabled] = useState(false);
+const [endDateDisabled, setEndDateDisabled] = useState(false);
   const [newProject, setNewProject] = useState({
     name: '',
     type: 'Residential',
     location: '',
     startDate: '',
     endDate: '',
-    status: 'Planning',
+    status: 'Pending',
     budget: '',
     manager: '',
     description: ''
@@ -75,6 +77,8 @@ const ConstructionDashboard = () => {
   // Add this state near your other state declarations
   const [searchQuery, setSearchQuery] = useState('');
 
+  const [notifications, setNotifications] = useState([]);
+
   const handleEdit = (project) => {
     setEditingProject(project);
     setIsEditModalOpen(true);
@@ -91,6 +95,7 @@ const ConstructionDashboard = () => {
   
     try {
       await axios.put(`${API_URL}/${editingProject._id}`, editingProject);
+      addEditProjectNotification(editingProject.name, editingProject._id);
       fetchProjects(); // Refresh the project list after updating
       setIsEditModalOpen(false);
       setEditingProject(null);
@@ -161,6 +166,18 @@ const ConstructionDashboard = () => {
     setValidDescription(DESCRIPTION_REGEX.test(newProject.description));
   }, [newProject.description]);
 
+  useEffect(() => {
+    if (editingProject) {
+      // Determine if dates should be disabled based on status
+      const disableStartDate = ['In Progress', 'Completed', 'On Hold', 'Cancelled'].includes(editingProject.status);
+      const disableEndDate = ['Completed', 'Cancelled'].includes(editingProject.status);
+      
+      // Set state for disabled fields (you'll need to add these state variables)
+      setStartDateDisabled(disableStartDate);
+      setEndDateDisabled(disableEndDate);
+    }
+  }, [editingProject?.status]);
+
   // Update the validateDates function
   const validateDates = (start, end) => {
     const startDate = new Date(start);
@@ -178,9 +195,23 @@ const ConstructionDashboard = () => {
       return false;
     }
   
+    if (
+      (!editingProject || editingProject.status === 'Pending') &&
+      startDate < today
+    ) {
+      setStartDateError('Start date cannot be in the past');
+      return false;
+    }
+  
+    if (endDate < startDate) {
+      setEndDateError('End date must be after start date');
+      return false;
+    }
+
     setStartDateError('');
     setEndDateError('');
     return true;
+
   };
 
   // Toggle notification panel
@@ -198,6 +229,7 @@ const ConstructionDashboard = () => {
     
     try {
       await axios.delete(`${API_URL}/${projectToDelete._id}`);
+      addDeleteProjectNotification(projectToDelete.name);
       // Refresh projects list
       fetchProjects();
       // Close the confirmation dialog
@@ -226,7 +258,40 @@ const ConstructionDashboard = () => {
     }
   };
 
-  // Update the handleSubmit function
+  // Add these functions to handle different types of notifications
+  const addNewProjectNotification = (projectName, projectId) => {
+    const newNotification = {
+      id: Date.now(),
+      message: `New project created: ${projectName}`,
+      timestamp: 'Just now',
+      type: 'project_created',
+      projectId: projectId
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
+  const addEditProjectNotification = (projectName, projectId) => {
+    const newNotification = {
+      id: Date.now(),
+      message: `Project updated: ${projectName}`,
+      timestamp: 'Just now',
+      type: 'project_updated',
+      projectId: projectId
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
+  const addDeleteProjectNotification = (projectName) => {
+    const newNotification = {
+      id: Date.now(),
+      message: `Project deleted: ${projectName}`,
+      timestamp: 'Just now',
+      type: 'project_deleted'
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
+  // Modify the handleSubmit function to include notification
   const handleSubmit = async (e) => {
     e.preventDefault();
   
@@ -241,7 +306,8 @@ const ConstructionDashboard = () => {
     }
   
     try {
-      await axios.post(API_URL, newProject);
+      const response = await axios.post(API_URL, newProject);
+      addNewProjectNotification(newProject.name, response.data._id);
       setIsCreateModalOpen(false);
       setNewProject({
         name: '',
@@ -249,7 +315,7 @@ const ConstructionDashboard = () => {
         location: '',
         startDate: '',
         endDate: '',
-        status: 'Planning',
+        status: 'In Progress',
         budget: '',
         manager: '',
         description: ''
@@ -261,28 +327,43 @@ const ConstructionDashboard = () => {
     }
   };
 
+  // Add function to handle notification click
+  const handleNotificationClick = (projectId) => {
+    navigate(`/projects/${projectId}`);
+    setIsNotificationOpen(false);
+  };
+
   // Update the filteredProjects function
 const filteredProjects = projects.filter((project) => {
-  const searchLower = searchQuery.toLowerCase();
+  // Convert search query to lowercase for case-insensitive search
+  const searchLower = searchQuery.toLowerCase().trim();
 
-  // Status-based filters
-  const statusMatch = (() => {
-    if (selectedTab === 'active') return project.status === 'In Progress';
-    if (selectedTab === 'completed') return project.status === 'Completed';
-    if (selectedTab === 'onHold') return project.status === 'On Hold';
-    return true;
-  })();
+  // Check if any of the fields match the search query
+  const matchesSearch = 
+    (project.name && project.name.toLowerCase().includes(searchLower)) ||      // Project ID
+    (project.location && project.location.toLowerCase().includes(searchLower)) || // Location
+    (project.status && project.status.toLowerCase().includes(searchLower));      // Status
 
-  // If there's no search query, just filter by status tab
-  if (!searchQuery) return statusMatch;
+  // If there's a search query, only return projects that match the search
+  if (searchQuery.trim()) {
+    return matchesSearch;
+  }
 
-  // Search by Project ID, location, and status
-  const searchMatches = 
-    project.name.toLowerCase().includes(searchLower) ||    // Project ID
-    project.location.toLowerCase().includes(searchLower) || // Location
-    project.status.toLowerCase().includes(searchLower);     // Status
-
-  return searchMatches && statusMatch;
+  // If no search query, apply status tab filter
+  switch (selectedTab) {
+    case 'active':
+      return project.status === 'In Progress';
+    case 'completed':
+      return project.status === 'Completed';
+    case 'onHold':
+      return project.status === 'On Hold';
+    case 'pending':
+      return project.status === 'Pending';
+    case 'cancelled':
+      return project.status === 'Cancelled';
+    default:
+      return true;
+  }
 });
 
   // Calculate project status data for pie chart
@@ -299,11 +380,11 @@ const filteredProjects = projects.filter((project) => {
       
       // Define colors for different statuses
       let color = '#93c5fd'; // Default blue
-      if (status === 'In Progress') color = '#f87171'; // Red
-      if (status === 'Planning') color = '#5eead4'; // Teal
-      if (status === 'Completed') color = '#fcd34d'; // Yellow
-      if (status === 'On Hold') color = '#93c5fd'; // Blue
-      
+      if (status === 'In Progress') color = '#3B82F6'; 
+      if (status === 'Pending') color = '#F4A7B9'; 
+      if (status === 'Completed') color = '#22C55E'; 
+      if (status === 'On Hold') color = '#FACC15'; 
+      if (status === 'Cancelled') color = '#EF4444'; 
       return { status, percentage, color };
     });
   };
@@ -353,9 +434,10 @@ const filteredProjects = projects.filter((project) => {
   // Get status color 
   const getStatusColor = (status) => {
     if (status === 'In Progress') return 'bg-blue-500';
-    if (status === 'Planning') return 'bg-yellow-500';
+    if (status === 'Cancelled') return 'bg-red-500';
     if (status === 'On Hold') return 'bg-orange-500';
     if (status === 'Completed') return 'bg-green-500';
+    if (status === 'Pending') return 'bg-purple-500';
     return 'bg-gray-500';
   };
 
@@ -365,31 +447,8 @@ const filteredProjects = projects.filter((project) => {
       <div className="bg-white shadow-sm p-4 flex justify-between items-center">
         <h1 className="text-xl font-bold">Dashboard</h1>
         <div className="flex items-center space-x-4">
-          {/* Search Bar */}
-          <div className="relative">
-            <input 
-              type="text" 
-              placeholder="Search by ID, location or status..." 
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-64 focus:outline-none focus:ring-2 focus:ring-red-300"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <div className="absolute left-3 top-2.5 text-gray-400">
-              <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-              >
-                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-          </div>
+         
+         
           <div className="relative">
             <div
               className="h-8 w-8 bg-gray-200 rounded-full text-center flex items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-300"
@@ -403,7 +462,7 @@ const filteredProjects = projects.filter((project) => {
           </div>
           <div className="flex items-center space-x-2">
             <div className="h-8 w-8 bg-red-400 rounded-full flex items-center justify-center text-white">J</div>
-            <span className="text-gray-700">John Admin</span>
+            <span className="text-gray-700">Jayamanna Admin</span>
           </div>
         </div>
       </div>
@@ -434,24 +493,49 @@ const filteredProjects = projects.filter((project) => {
             </button>
           </div>
           <ul className="space-y-3">
-            <li className="p-3 bg-gray-100 rounded-lg shadow-sm">
-              <p className="text-sm font-medium text-gray-800">
-                New project created: Downtown High-rise
-              </p>
-              <p className="text-xs text-gray-500">2 hours ago</p>
-            </li>
-            <li className="p-3 bg-gray-100 rounded-lg shadow-sm">
-              <p className="text-sm font-medium text-gray-800">
-                Project deadline approaching: Riverside Mall
-              </p>
-              <p className="text-xs text-gray-500">1 day ago</p>
-            </li>
-            <li className="p-3 bg-gray-100 rounded-lg shadow-sm">
-              <p className="text-sm font-medium text-gray-800">
-                Budget update: Corporate Office Tower
-              </p>
-              <p className="text-xs text-gray-500">3 days ago</p>
-            </li>
+            {notifications.length === 0 ? (
+              <li className="p-3 text-center text-gray-500">
+                No notifications yet
+              </li>
+            ) : (
+              notifications.map((notification) => (
+                <li 
+                  key={notification.id} 
+                  onClick={() => notification.projectId && handleNotificationClick(notification.projectId)}
+                  className={`p-3 rounded-lg shadow-sm cursor-pointer transition-all duration-200 hover:shadow-md ${
+                    notification.type === 'project_created' ? 'bg-green-50 border border-green-100 hover:bg-green-100' :
+                    notification.type === 'project_updated' ? 'bg-blue-50 border border-blue-100 hover:bg-blue-100' :
+                    'bg-red-50 border border-red-100 hover:bg-red-100'
+                  }`}
+                >
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0 mr-3">
+                      {notification.type === 'project_created' && (
+                        <svg className="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      )}
+                      {notification.type === 'project_updated' && (
+                        <svg className="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      )}
+                      {notification.type === 'project_deleted' && (
+                        <svg className="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">
+                        {notification.message}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">{notification.timestamp}</p>
+                    </div>
+                  </div>
+                </li>
+              ))
+            )}
           </ul>
         </div>
       )}
@@ -606,18 +690,47 @@ const filteredProjects = projects.filter((project) => {
             {/* Projects Table */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold">Active Projects</h2>
-                <button 
-                  className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center"
-                  onClick={() => setIsCreateModalOpen(true)}
-                >
-                  <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  New Project
-                </button>
+                <h2 className="text-lg font-semibold">Projects Details</h2>
+                
+                {/* Search bar */}
+                <div className="flex items-center space-x-4">
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      placeholder="Search by ID, location or status" 
+                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-64 focus:outline-none focus:ring-2 focus:ring-red-300"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <div className="absolute left-3 top-2.5 text-gray-400">
+                      <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                      >
+                        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                 
+                  <button 
+                    className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center"
+                    onClick={() => setIsCreateModalOpen(true)}
+                  >
+                    <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Create a Project
+                  </button>
+                </div>
               </div>
-
+              
               {/* Add tabs in the Projects section */}
               <div className="flex space-x-4 mb-6">
                 <button
@@ -637,6 +750,24 @@ const filteredProjects = projects.filter((project) => {
                   onClick={() => setSelectedTab('onHold')}
                 >
                   On Hold Projects
+                </button>
+                <button
+                  className={`px-4 py-2 rounded-md ${selectedTab === 'pending' ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                  onClick={() => setSelectedTab('pending')}
+                >
+                  Pending Projects
+                </button>
+                <button
+                  className={`px-4 py-2 rounded-md ${selectedTab === 'cancelled' ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                  onClick={() => setSelectedTab('cancelled')}
+                >
+                  Cancelled Projects
+                </button>
+                <button
+                  className={`px-4 py-2 rounded-md ${selectedTab === 'all' ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                  onClick={() => setSelectedTab('all')}
+                >
+                  All Projects
                 </button>
               </div>
               
@@ -664,6 +795,9 @@ const filteredProjects = projects.filter((project) => {
                           Status
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Location
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Completion
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -680,13 +814,13 @@ const filteredProjects = projects.filter((project) => {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredProjects.length === 0 ? (
                         <tr>
-                          <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
+                          <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
                             No projects found
                           </td>
                         </tr>
                       ) : (
                         filteredProjects.map((project) => (
-                          <tr key={project.id} className="hover:bg-gray-50">
+                          <tr key={project._id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900">{project.name}</div>
                             </td>
@@ -694,6 +828,9 @@ const filteredProjects = projects.filter((project) => {
                               <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(project.status)} text-white`}>
                                 {project.status}
                               </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{project.location}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="w-full bg-gray-200 rounded-full h-2.5 mb-1">
@@ -793,26 +930,53 @@ const filteredProjects = projects.filter((project) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <input
-              type="date"
-              name="startDate"
-              value={editingProject.startDate}
-              onChange={handleEditInputChange}
-              className="w-full border border-gray-300 rounded-md p-2"
-            />
-          </div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+  <input
+    type="date"
+    name="startDate"
+    value={editingProject.startDate}
+    onChange={handleEditInputChange}
+    disabled={startDateDisabled}
+    className={`w-full border border-gray-300 rounded-md p-2 ${startDateDisabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+  />
+  {startDateDisabled && (
+    <p className="text-xs text-gray-500 mt-1">
+      Start date cannot be changed for {editingProject.status} projects
+    </p>
+  )}
+</div>
 
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+  <input
+    type="date"
+    name="endDate"
+    value={editingProject.endDate}
+    onChange={handleEditInputChange}
+    disabled={endDateDisabled}
+    className={`w-full border border-gray-300 rounded-md p-2 ${endDateDisabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+  />
+  {endDateDisabled && (
+    <p className="text-xs text-gray-500 mt-1">
+      End date cannot be changed for {editingProject.status} projects
+    </p>
+  )}
+</div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <input
-              type="date"
-              name="endDate"
-              value={editingProject.endDate}
-              onChange={handleEditInputChange}
-              className="w-full border border-gray-300 rounded-md p-2"
-            />
-          </div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+  <select
+    name="status"
+    value={editingProject.status}
+    onChange={handleEditInputChange}
+    className="w-full border border-gray-300 rounded-md p-2"
+  >
+    <option value="Pending">Pending</option>
+    <option value="In Progress">In Progress</option>
+    <option value="On Hold">On Hold</option>
+    <option value="Completed">Completed</option>
+    <option value="Cancelled">Cancelled</option>
+  </select>
+</div>
         </div>
 
         <div className="flex justify-end space-x-3">
@@ -985,9 +1149,11 @@ const filteredProjects = projects.filter((project) => {
                     onChange={handleInputChange}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500"
                   >
+                    <option value="Pending">Pending</option>
                     <option value="In Progress">In Progress</option>
                     <option value="On Hold">On Hold</option>
                     <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
                   </select>
                 </div>
                 

@@ -16,7 +16,10 @@ import ProjectDetails from './pages/ProjectDetails';
 
 function App() {
   return (
+
+    
     <Router>
+      
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/assign" element={<LabourAssignment />} />

@@ -25,7 +25,7 @@ const projectSchema = new mongoose.Schema({
   status: {
     type: String,
     required: true,
-    enum: ['Planning', 'Pending', 'In Progress', 'On Hold', 'Completed', 'Cancelled']
+    enum: ['Pending', 'In Progress', 'On Hold', 'Completed', 'Cancelled']
   },
   budget: {
     type: Number,

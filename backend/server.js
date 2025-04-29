@@ -39,4 +39,17 @@ app.get('/', (req, res) => {
 });
 
 // Start Server
-app.listen(port, () => console.log(`Server running on port ${port}`));
+const startServer = (port) => {
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  }).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`Port ${port} is busy, trying ${port + 1}`);
+      startServer(port + 1);
+    } else {
+      console.error(err);
+    }
+  });
+};
+
+startServer(4000);
