@@ -69,9 +69,11 @@ const ExpenseReport = ({ expense, totalBudget, projects, onClose }) => {
               <h2>Receipt</h2>
               ${expense.receipt.startsWith('data:image') 
                 ? `<img src="${expense.receipt}" alt="Receipt" style="max-width: 100%; height: auto; display: block; margin: 0 auto;" />`
+                : expense.receipt.includes('/uploads/') 
+                ? `<img src="${expense.receipt}" alt="Receipt" style="max-width: 100%; height: auto; display: block; margin: 0 auto;" />`
                 : `<div class="receipt-pdf">
                     <p>PDF Receipt attached</p>
-                    <p>File: ${expense.receipt.name || expense.receipt.split('/').pop()}</p>
+                    <p>File: ${typeof expense.receipt === 'string' ? expense.receipt.split('/').pop() : 'Receipt'}</p>
                    </div>`
               }
             </div>
@@ -211,7 +213,13 @@ const ExpenseReport = ({ expense, totalBudget, projects, onClose }) => {
           <div className="mt-8">
             <h3 className="text-lg font-medium text-gray-800 mb-4">Receipt</h3>
             <div className="border rounded-lg p-4 bg-gray-50">
-              {expense.receipt.startsWith('data:image') ? (
+              {expense.receipt && expense.receipt.startsWith('data:image') ? (
+                <img
+                  src={expense.receipt}
+                  alt="Receipt"
+                  className="max-w-full h-auto rounded-lg shadow-sm"
+                />
+              ) : expense.receipt && expense.receipt.includes('/uploads/') ? (
                 <img
                   src={expense.receipt}
                   alt="Receipt"

@@ -29,6 +29,9 @@ const expenseSchema = new mongoose.Schema({
   },
   description: {
     type: String
+  },
+  receipt: {
+    type: String
   }
 }, {
   timestamps: true

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const InquirePage = () => {
   const [selectedPackage, setSelectedPackage] = useState('Design & Build');
@@ -12,6 +13,7 @@ const InquirePage = () => {
   });
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState({ type: '', message: '' });
+  const navigate = useNavigate();
 
   const handlePackageChange = (e) => {
     setSelectedPackage(e.target.value);
@@ -31,18 +33,34 @@ const InquirePage = () => {
     setStatus({ type: '', message: '' });
     
     try {
+      // Create the inquiry
       const response = await axios.post('http://localhost:4000/api/inquiries', {
         selectedPackage,
-        ...formData
+        name: formData.name,
+        email: formData.email,
+        message: formData.message
       });
       
       if (response.data.success) {
+        // Create a notification for the admin
+        try {
+          await axios.post('http://localhost:4000/api/notifications', {
+            message: `New inquiry from ${formData.name} about ${selectedPackage}`,
+            type: 'inquiry_received',
+            inquiryId: response.data.data._id
+          });
+        } catch (notificationError) {
+          console.error('Error creating notification:', notificationError);
+          // Continue with form submission even if notification fails
+        }
+        
         setStatus({
           type: 'success',
           message: 'Your inquiry has been submitted successfully! We will contact you soon.'
         });
         // Reset form after successful submission
         setFormData({ name: '', email: '', message: '' });
+        setSelectedPackage('Design & Build');
       }
     } catch (error) {
       console.error('Error submitting inquiry:', error);

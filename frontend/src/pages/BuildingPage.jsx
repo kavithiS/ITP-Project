@@ -1,10 +1,23 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import buildingGraphic from '../assets/images/building_graphic.png';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
 
 const BuildingPage = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  
+  const handleInquireClick = (e) => {
+    e.preventDefault();
+    if (isAuthenticated) {
+      navigate('/inquire');
+    } else {
+      navigate('/signin');
+    }
+  };
+
   return (
     <>
       <Header />
@@ -58,7 +71,7 @@ const BuildingPage = () => {
             </p>
             
             <p className="text-[#531914]">
-              Choose your desired construction strategy, and <Link to="/inquire" className="text-red-500 hover:underline">request a quote today</Link>.
+              Choose your desired construction strategy, and <a href="#" onClick={handleInquireClick} className="text-red-500 hover:underline">request a quote today</a>.
             </p>
           </div>
         </div>
@@ -119,12 +132,12 @@ const BuildingPage = () => {
         {/* Call to Action */}
         <div className="text-center mb-16">
           <p className="text-[#531914] mb-4 text-lg">Ready to start your project with us?</p>
-          <Link 
-            to="/inquire" 
+          <button 
+            onClick={handleInquireClick}
             className="inline-block py-3 px-8 bg-red-500 text-white font-medium rounded hover:bg-red-600 transition duration-200"
           >
             Get a Quote
-          </Link>
+          </button>
         </div>
       </div>
       <Footer />

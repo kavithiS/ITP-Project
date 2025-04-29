@@ -3,6 +3,8 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import logo from "../assets/images/logo.png";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { Player } from '@lottiefiles/react-lottie-player';
@@ -18,6 +20,21 @@ import Header from '../components/Header';
 const Homepage = () => {
   // Create a ref for the features section
   const featuresRef = useRef(null);
+  
+  // Add navigate hook
+  const navigate = useNavigate();
+  
+  // Add auth hook
+  const { isAuthenticated } = useAuth();
+  
+  // Function to navigate to inquire page
+  const goToInquirePage = () => {
+    if (isAuthenticated) {
+      navigate('/inquire');
+    } else {
+      navigate('/signin');
+    }
+  };
   
   // Scroll to features section function
   const scrollToFeatures = () => {
@@ -135,6 +152,7 @@ const Homepage = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="bg-gradient-to-r from-red-600 to-red-500 text-white px-8 py-4 rounded-full hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300"
+                  onClick={goToInquirePage}
                 >
                   Inquire Now
                 </motion.button>

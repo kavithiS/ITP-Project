@@ -24,24 +24,26 @@ import ResetPassword from './pages/ResetPassword';
 import Expenses from './pages/Expenses';
 import Sidebar from './components/Sidebar';
 import ErrorBoundary from './components/ErrorBoundary';
+import ProtectedRoute from './components/ProtectedRoute';
+import { AuthProvider } from './context/AuthContext';
 
 // Create a wrapper component to handle sidebar logic
-const AppLayout = () => {
+const AppLayout = ({ children }) => {
   const location = useLocation();
+  const isAuthPage = ['/signin', '/signup', '/forgot-password', '/reset-password'].some(
+    path => location.pathname.startsWith(path)
+  );
   const isHomePage = location.pathname === '/';
 
   return (
     <div className="flex">
-      {!isHomePage && (
+      {!isHomePage && !isAuthPage && (
         <ErrorBoundary>
           <Sidebar />
         </ErrorBoundary>
       )}
-      <main className={`flex-1 ${!isHomePage ? 'ml-64' : ''}`}>
-        <Routes>
-          <Route path="/" element={<Expenses />} />
-          <Route path="/expenses" element={<Expenses />} />
-        </Routes>
+      <main className={`flex-1 ${!isHomePage && !isAuthPage ? 'ml-64' : ''}`}>
+        {children}
       </main>
     </div>
   );
@@ -49,38 +51,49 @@ const AppLayout = () => {
 
 function App() {
   return (
-
-    
-    <Router>
-      
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/assign" element={<LabourAssignment />} />
-        <Route path="/building-page" element={<BuildingPage />} />
-        <Route path="/test-building" element={<TestBuilding />} />
-        <Route path="/task" element={<Task />} />
-        <Route path="/purchase" element={<Purchase />} />
-        <Route path="/test" element={<Test />} />
-        <Route path="/signin" element={<SignIn />} />
-        <Route path="/machineInventory" element={<InventoryManagement />} />
-        <Route path="/add-machine" element={<AddMachineForm />} />
-        <Route path="/expenses" element={<ExpensesPage />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/machineInventory" element={<InventoryManagement />} />
-        <Route path="/userdashboard" element={<UserDashboard />} />
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        <Route path="/projects/:id" element={<ProjectDetails />} />
-        <Route path="/contact" element={<ContactUs />} />
-        <Route path="/inquire" element={<InquirePage />} />
-        <Route path="/inquiries" element={<InquiriesPage />} />
-        <Route path="/team" element={<TeamPage />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route path="/*" element={<AppLayout />} /> 
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <ErrorBoundary>
+          <Routes>
+            {/* Routes without Sidebar */}
+            <Route path="/" element={<Home />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/building-page" element={<BuildingPage />} />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/team" element={<TeamPage />} />
+            
+            {/* Protected Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/inquire" element={<InquirePage />} />
+            </Route>
+            
+            {/* Routes with Sidebar */}
+            <Route path="*" element={
+              <AppLayout>
+                <Routes>
+                  <Route path="/assign" element={<LabourAssignment />} />
+                  <Route path="/test-building" element={<TestBuilding />} />
+                  <Route path="/task" element={<Task />} />
+                  <Route path="/purchase" element={<Purchase />} />
+                  <Route path="/test" element={<Test />} />
+                  <Route path="/machineInventory" element={<InventoryManagement />} />
+                  <Route path="/add-machine" element={<AddMachineForm />} />
+                  <Route path="/expenses" element={<ExpensesPage />} />
+                  <Route path="/userdashboard" element={<UserDashboard />} />
+                  <Route path="/admin-dashboard" element={<AdminDashboard />} />
+                  <Route path="/projects/:id" element={<ProjectDetails />} />
+                  <Route path="/inquiries" element={<InquiriesPage />} />
+                </Routes>
+              </AppLayout>
+            } />
+          </Routes>
+        </ErrorBoundary>
+      </Router>
+    </AuthProvider>
   );
 }
-
 
 export default App;

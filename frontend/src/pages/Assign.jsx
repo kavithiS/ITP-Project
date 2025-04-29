@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import logo from '../assets/images/logo.png';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const inputClassName = "w-full px-4 py-2 rounded-lg border-2 border-red-200 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all";
 
@@ -149,73 +151,260 @@ const LabourAssignment = () => {
     setFilteredAssignments(filtered);
   };
 
+  const downloadPDF = () => {
+    if (!filteredAssignments || filteredAssignments.length === 0) {
+      setError('No data available to download');
+      return;
+    }
+
+    try {
+      // Create PDF document in landscape orientation
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+      });
+      
+      // Define colors
+      const primaryColor = [99, 0, 0]; // Dark red for header background
+      const textGray = [50, 50, 50]; // Dark gray for text
+      const lightBeige = [252, 234, 187]; // Light beige for table headers
+      const lightCream = [255, 248, 235]; // Light cream for table rows
+      
+      // Get page dimensions
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      
+      // Add header background - dark red
+      doc.setFillColor(...primaryColor);
+      doc.rect(0, 0, pageWidth, 25, 'F');
+      
+      // Add logo to the header - convert the imported logo to base64
+      const logoImg = new Image();
+      logoImg.src = logo;
+      
+      logoImg.onload = function() {
+        // Once the image is loaded, continue with PDF generation
+        // Create a canvas to draw the image and convert it to base64
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = logoImg.width;
+        canvas.height = logoImg.height;
+        ctx.drawImage(logoImg, 0, 0);
+        
+        // Get base64 representation
+        const logoBase64 = canvas.toDataURL('image/png');
+        
+        // Add the logo - match the position in the image
+        const logoHeight = 16; // Smaller logo
+        const logoWidth = (logoImg.width / logoImg.height) * logoHeight;
+        
+        // Calculate vertical positions to center-align logo and text
+        const headerHeight = 25; // Total header height
+        const logoY = (headerHeight - logoHeight) / 2; // Center the logo vertically
+        const textY = headerHeight / 2 + 2; // Center the text
+        
+        doc.addImage(logoBase64, 'PNG', 35, logoY, logoWidth, logoHeight);
+        
+        // Add company name in header
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(24);
+        doc.text('Red Brick Constructions', 35 + logoWidth + 10, textY);
+        
+        // Add generated date - top right
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, pageWidth - 15, 16, { align: 'right' });
+        
+        // Add title section
+        doc.setTextColor(...textGray);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Labour Assignment Report', 35, 45);
+        
+        // Add total count
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Total assignments: ${filteredAssignments.length}`, pageWidth - 35, 45, { align: 'right' });
+        
+        // If search is active, add search criteria
+        if (searchTerm) {
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+          doc.text(`Filtered by: "${searchTerm}"`, 35, 50);
+        }
+        
+        // Prepare columns
+        const columns = [
+          { header: 'Project Code', dataKey: 'projectCode' },
+          { header: 'Task Code', dataKey: 'taskCode' },
+          { header: 'Labour Type', dataKey: 'labourType' },
+          { header: 'Number', dataKey: 'numberOfLabourers' },
+          { header: 'Assignment Date', dataKey: 'assignmentDate' },
+          { header: 'Site Name', dataKey: 'siteName' },
+          { header: 'Supervisor', dataKey: 'supervisor' },
+        ];
+        
+        // Prepare rows
+        const rows = filteredAssignments.map(assignment => {
+          return {
+            projectCode: assignment.projectCode,
+            taskCode: assignment.taskCode,
+            labourType: assignment.labourType,
+            numberOfLabourers: assignment.numberOfLabourers,
+            assignmentDate: new Date(assignment.assignmentDate).toLocaleDateString(),
+            siteName: assignment.siteName,
+            supervisor: assignment.supervisor
+          };
+        });
+        
+        // Create table with styling
+        autoTable(doc, {
+          head: [columns.map(col => col.header)],
+          body: rows.map(row => columns.map(col => row[col.dataKey])),
+          startY: 60,
+          theme: 'grid',
+          tableWidth: 'auto',
+          margin: { left: 35, right: 35 },
+          styles: {
+            fontSize: 10,
+            cellPadding: { top: 8, right: 5, bottom: 8, left: 5 },
+            lineColor: [220, 220, 220],
+            lineWidth: 0.1,
+            overflow: 'linebreak',
+          },
+          headStyles: {
+            fillColor: [...lightBeige],
+            textColor: [...textGray],
+            fontStyle: 'bold',
+            halign: 'left',
+          },
+          bodyStyles: {
+            fillColor: [...lightCream],
+          },
+          alternateRowStyles: {
+            fillColor: [...lightCream],
+          },
+        });
+        
+        // Save the PDF
+        const fileName = `labour-assignments-${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
+        
+        setSuccess('PDF downloaded successfully!');
+        setTimeout(() => setSuccess(''), 3000);
+      };
+      
+      // Add error handler for logo loading
+      logoImg.onerror = function() {
+        console.error('Error loading logo image');
+        generatePDFWithoutLogo();
+      };
+      
+      // Fallback function to generate PDF without logo
+      const generatePDFWithoutLogo = () => {
+        // Add company name in header
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(24);
+        doc.text('Red Brick Constructions', 35, 16);
+        
+        // Add generated date
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, pageWidth - 15, 16, { align: 'right' });
+        
+        // Add title
+        doc.setTextColor(...textGray);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Labour Assignment Report', 35, 45);
+        
+        // Add total count
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Total assignments: ${filteredAssignments.length}`, pageWidth - 35, 45, { align: 'right' });
+        
+        // If search is active, add search criteria
+        if (searchTerm) {
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+          doc.text(`Filtered by: "${searchTerm}"`, 35, 50);
+        }
+        
+        // Prepare columns
+        const columns = [
+          { header: 'Project Code', dataKey: 'projectCode' },
+          { header: 'Task Code', dataKey: 'taskCode' },
+          { header: 'Labour Type', dataKey: 'labourType' },
+          { header: 'Number', dataKey: 'numberOfLabourers' },
+          { header: 'Assignment Date', dataKey: 'assignmentDate' },
+          { header: 'Site Name', dataKey: 'siteName' },
+          { header: 'Supervisor', dataKey: 'supervisor' },
+        ];
+        
+        // Prepare rows
+        const rows = filteredAssignments.map(assignment => {
+          return {
+            projectCode: assignment.projectCode,
+            taskCode: assignment.taskCode,
+            labourType: assignment.labourType,
+            numberOfLabourers: assignment.numberOfLabourers,
+            assignmentDate: new Date(assignment.assignmentDate).toLocaleDateString(),
+            siteName: assignment.siteName,
+            supervisor: assignment.supervisor
+          };
+        });
+        
+        // Create table with styling
+        autoTable(doc, {
+          head: [columns.map(col => col.header)],
+          body: rows.map(row => columns.map(col => row[col.dataKey])),
+          startY: 60,
+          theme: 'grid',
+          tableWidth: 'auto',
+          margin: { left: 35, right: 35 },
+          styles: {
+            fontSize: 10,
+            cellPadding: { top: 8, right: 5, bottom: 8, left: 5 },
+            lineColor: [220, 220, 220],
+            lineWidth: 0.1,
+            overflow: 'linebreak',
+          },
+          headStyles: {
+            fillColor: [...lightBeige],
+            textColor: [...textGray],
+            fontStyle: 'bold',
+            halign: 'left',
+          },
+          bodyStyles: {
+            fillColor: [...lightCream],
+          },
+          alternateRowStyles: {
+            fillColor: [...lightCream],
+          },
+        });
+        
+        // Save the PDF
+        const fileName = `labour-assignments-${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
+        
+        setSuccess('PDF downloaded successfully!');
+        setTimeout(() => setSuccess(''), 3000);
+      };
+      
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      setError(`Failed to generate PDF: ${error.message}`);
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <nav className="fixed h-full w-64 bg-white border-r border-gray-200 shadow-lg">
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-10">
-            <motion.img 
-              src={logo} 
-              alt="REDBRICK Logo" 
-              className="w-10 h-10 object-contain"
-            />
-            <span className="text-red-600 text-xl font-bold">RedBrick</span>
-          </div>
-
-          <div className="space-y-1">
-            <Link 
-              to="/" 
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              <span>Home</span>
-            </Link>
-            
-            <Link 
-              to="/task" 
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              <span>Tasks</span>
-            </Link>
-            <Link 
-              to="/purchase" 
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-              <span>Purchase</span>
-            </Link>
-            <Link 
-              to="/machineInventory" 
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
-              <span>Machinery Inventory</span>
-            </Link>
-            <Link 
-              to="/inventory" 
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              <span>Site Diary</span>
-            </Link>
-          </div>
-        </div>
-      </nav>
-
       {/* Main Content */}
-      <div className="flex-1 ml-64">
+      <div className="flex-1">
         <div className="p-8">
           <div className="max-w-7xl mx-auto">
             <h1 className="text-2xl font-bold text-gray-800 mb-8">Labour Assignment</h1>
@@ -370,27 +559,48 @@ const LabourAssignment = () => {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-800">Labour Assignments</h2>
-                <div className="relative w-72">
-                  <input
-                    type="text"
-                    placeholder="Search by project or task code..."
-                    value={searchTerm}
-                    onChange={handleSearch}
-                    className="w-full px-4 py-2 pr-10 rounded-lg border-2 border-gray-200 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
-                  />
-                  <svg
-                    className="absolute right-3 top-2.5 h-5 w-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={downloadPDF}
+                    className="px-6 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-all shadow-sm flex items-center gap-2"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    Download PDF
+                  </button>
+                  <div className="relative w-72">
+                    <input
+                      type="text"
+                      placeholder="Search by project or task code..."
+                      value={searchTerm}
+                      onChange={handleSearch}
+                      className="w-full px-4 py-2 pr-10 rounded-lg border-2 border-gray-200 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
                     />
-                  </svg>
+                    <svg
+                      className="absolute right-3 top-2.5 h-5 w-5 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                  </div>
                 </div>
               </div>
 

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   FiUser,
   FiMail,
@@ -11,6 +12,7 @@ import {
 
 const SignUpPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
@@ -122,11 +124,41 @@ const SignUpPage = () => {
         throw new Error(data.message || "Registration failed");
       }
 
-      localStorage.setItem("token", data.token); // Assuming backend returns a token
-      navigate("/signIn");
+      // After successful registration, automatically sign in
+      try {
+        const signInResponse = await fetch("http://localhost:4000/api/user/signin", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            pwd: formData.pwd,
+          }),
+        });
+
+        const signInData = await signInResponse.json();
+
+        if (signInResponse.ok && signInData.data) {
+          // Use login from AuthContext
+          login(signInData.data);
+          
+          // Redirect based on user role (likely a regular user)
+          if (signInData.data.user.role === "ADMIN") {
+            navigate("/admin-dashboard");
+          } else {
+            navigate("/userdashboard");
+          }
+        } else {
+          // If auto-login fails, just redirect to sign in page
+          navigate("/signin");
+        }
+      } catch (signInErr) {
+        console.error("Auto sign-in failed:", signInErr);
+        navigate("/signin");
+      }
     } catch (err) {
       setError(err.message || "Something went wrong");
-    } finally {
       setIsLoading(false);
     }
   };

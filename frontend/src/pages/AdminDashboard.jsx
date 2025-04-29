@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const API_URL = 'http://localhost:4000/api/projects';
+const NOTIFICATIONS_API_URL = 'http://localhost:4000/api/notifications';
 
 // Add these constants at the top of your file
 const PROJECT_NAME_REGEX = /^[a-zA-Z0-9\s-]{3,50}$/;
@@ -12,12 +14,13 @@ const DESCRIPTION_REGEX = /^[\w\s.,!?-]{10,500}$/;
 
 const ConstructionDashboard = () => {
   const navigate = useNavigate();
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [startDateDisabled, setStartDateDisabled] = useState(false);
-const [endDateDisabled, setEndDateDisabled] = useState(false);
+  const [endDateDisabled, setEndDateDisabled] = useState(false);
   const [newProject, setNewProject] = useState({
     name: '',
     type: 'Residential',
@@ -42,6 +45,15 @@ const [endDateDisabled, setEndDateDisabled] = useState(false);
 
   // Add state for notification panel
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  
+  // Add state for notifications
+  const [notifications, setNotifications] = useState([]);
+  
+  // Add state for notification count
+  const [notificationCount, setNotificationCount] = useState(0);
+  
+  // Add loading state for notifications
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   // Add state for delete confirmation
   const [projectToDelete, setProjectToDelete] = useState(null);
@@ -77,7 +89,46 @@ const [endDateDisabled, setEndDateDisabled] = useState(false);
   // Add this state near your other state declarations
   const [searchQuery, setSearchQuery] = useState('');
 
-  const [notifications, setNotifications] = useState([]);
+  // Check if user is authenticated and is an admin
+  useEffect(() => {
+    if (!isAuthenticated || !isAdmin()) {
+      navigate('/');
+    }
+  }, [isAuthenticated, isAdmin, navigate]);
+
+  // Add a function to fetch notifications
+  const fetchNotifications = async () => {
+    setLoadingNotifications(true);
+    try {
+      const response = await axios.get(NOTIFICATIONS_API_URL);
+      if (response.data && Array.isArray(response.data.notifications)) {
+        setNotifications(response.data.notifications);
+        
+        // Count unread notifications
+        const unreadCount = response.data.notifications.filter(
+          notification => !notification.isRead
+        ).length;
+        setNotificationCount(unreadCount);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  // Call fetchNotifications when component mounts
+  useEffect(() => {
+    fetchNotifications();
+    
+    // Set up polling to check for new notifications every 30 seconds
+    const notificationInterval = setInterval(() => {
+      fetchNotifications();
+    }, 30000);
+    
+    // Clear interval on component unmount
+    return () => clearInterval(notificationInterval);
+  }, []);
 
   const handleEdit = (project) => {
     setEditingProject(project);
@@ -290,6 +341,19 @@ const [endDateDisabled, setEndDateDisabled] = useState(false);
     };
     setNotifications(prev => [newNotification, ...prev]);
   };
+  
+  // Add function for inquiry notifications
+  const addInquiryNotification = (customerName, inquiryType, inquiryId) => {
+    const newNotification = {
+      id: Date.now(),
+      message: `New inquiry from ${customerName} about ${inquiryType}`,
+      timestamp: 'Just now',
+      type: 'inquiry_received',
+      inquiryId: inquiryId
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+    setNotificationCount(prev => prev + 1);
+  };
 
   // Modify the handleSubmit function to include notification
   const handleSubmit = async (e) => {
@@ -328,43 +392,75 @@ const [endDateDisabled, setEndDateDisabled] = useState(false);
   };
 
   // Add function to handle notification click
-  const handleNotificationClick = (projectId) => {
-    navigate(`/projects/${projectId}`);
-    setIsNotificationOpen(false);
+  const handleNotificationClick = async (notification) => {
+    // Mark notification as read
+    try {
+      await axios.put(`${NOTIFICATIONS_API_URL}/${notification._id}`, {
+        isRead: true
+      });
+      
+      // Update notification in the local state
+      setNotifications(prev => 
+        prev.map(n => 
+          n._id === notification._id ? { ...n, isRead: true } : n
+        )
+      );
+      
+      // Decrement unread count if this was unread
+      if (!notification.isRead) {
+        setNotificationCount(prev => Math.max(0, prev - 1));
+      }
+      
+      // Close notification panel
+      setIsNotificationOpen(false);
+      
+      // Navigate based on notification type
+      if (notification.type === 'inquiry_received' && notification.inquiryId) {
+        // Navigate to inquiries page
+        navigate('/inquiries');
+      } else if (notification.type === 'project_created' || notification.type === 'project_updated') {
+        // For project notifications, navigate to the project if projectId exists
+        if (notification.projectId) {
+          navigate(`/projects/${notification.projectId}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
   // Update the filteredProjects function
-const filteredProjects = projects.filter((project) => {
-  // Convert search query to lowercase for case-insensitive search
-  const searchLower = searchQuery.toLowerCase().trim();
+  const filteredProjects = projects.filter((project) => {
+    // Convert search query to lowercase for case-insensitive search
+    const searchLower = searchQuery.toLowerCase().trim();
 
-  // Check if any of the fields match the search query
-  const matchesSearch = 
-    (project.name && project.name.toLowerCase().includes(searchLower)) ||      // Project ID
-    (project.location && project.location.toLowerCase().includes(searchLower)) || // Location
-    (project.status && project.status.toLowerCase().includes(searchLower));      // Status
+    // Check if any of the fields match the search query
+    const matchesSearch = 
+      (project.name && project.name.toLowerCase().includes(searchLower)) ||      // Project ID
+      (project.location && project.location.toLowerCase().includes(searchLower)) || // Location
+      (project.status && project.status.toLowerCase().includes(searchLower));      // Status
 
-  // If there's a search query, only return projects that match the search
-  if (searchQuery.trim()) {
-    return matchesSearch;
-  }
+    // If there's a search query, only return projects that match the search
+    if (searchQuery.trim()) {
+      return matchesSearch;
+    }
 
-  // If no search query, apply status tab filter
-  switch (selectedTab) {
-    case 'active':
-      return project.status === 'In Progress';
-    case 'completed':
-      return project.status === 'Completed';
-    case 'onHold':
-      return project.status === 'On Hold';
-    case 'pending':
-      return project.status === 'Pending';
-    case 'cancelled':
-      return project.status === 'Cancelled';
-    default:
-      return true;
-  }
-});
+    // If no search query, apply status tab filter
+    switch (selectedTab) {
+      case 'active':
+        return project.status === 'In Progress';
+      case 'completed':
+        return project.status === 'Completed';
+      case 'onHold':
+        return project.status === 'On Hold';
+      case 'pending':
+        return project.status === 'Pending';
+      case 'cancelled':
+        return project.status === 'Cancelled';
+      default:
+        return true;
+    }
+  });
 
   // Calculate project status data for pie chart
   const calculateStatusData = () => {
@@ -441,6 +537,12 @@ const filteredProjects = projects.filter((project) => {
     return 'bg-gray-500';
   };
 
+  // Function to handle logout
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -458,11 +560,39 @@ const filteredProjects = projects.filter((project) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
             </div>
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-4 w-4 flex items-center justify-center text-xs">3</span>
+            {notificationCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-4 w-4 flex items-center justify-center text-xs">
+                {notificationCount > 9 ? '9+' : notificationCount}
+              </span>
+            )}
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 bg-red-400 rounded-full flex items-center justify-center text-white">J</div>
-            <span className="text-gray-700">Jayamanna Admin</span>
+          
+          {/* Add User Management button */}
+          <button
+            onClick={() => navigate('/userdashboard')}
+            className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm font-medium shadow-sm hover:bg-red-600 transition duration-200"
+          >
+            Manage Users
+          </button>
+          
+          <div className="relative group">
+            <div className="flex items-center space-x-2 cursor-pointer">
+              <div className="h-8 w-8 bg-red-400 rounded-full flex items-center justify-center text-white">
+                {user?.name?.charAt(0)}
+              </div>
+              <span className="text-gray-700">{user?.name || 'Admin'}</span>
+              <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+              <button 
+                onClick={handleLogout}
+                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-red-50 hover:text-red-700"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -492,51 +622,67 @@ const filteredProjects = projects.filter((project) => {
               </svg>
             </button>
           </div>
-          <ul className="space-y-3">
-            {notifications.length === 0 ? (
-              <li className="p-3 text-center text-gray-500">
-                No notifications yet
-              </li>
-            ) : (
-              notifications.map((notification) => (
-                <li 
-                  key={notification.id} 
-                  onClick={() => notification.projectId && handleNotificationClick(notification.projectId)}
-                  className={`p-3 rounded-lg shadow-sm cursor-pointer transition-all duration-200 hover:shadow-md ${
-                    notification.type === 'project_created' ? 'bg-green-50 border border-green-100 hover:bg-green-100' :
-                    notification.type === 'project_updated' ? 'bg-blue-50 border border-blue-100 hover:bg-blue-100' :
-                    'bg-red-50 border border-red-100 hover:bg-red-100'
-                  }`}
-                >
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 mr-3">
-                      {notification.type === 'project_created' && (
-                        <svg className="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                      )}
-                      {notification.type === 'project_updated' && (
-                        <svg className="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      )}
-                      {notification.type === 'project_deleted' && (
-                        <svg className="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">{notification.timestamp}</p>
-                    </div>
-                  </div>
+          
+          {loadingNotifications ? (
+            <div className="flex justify-center items-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {notifications.length === 0 ? (
+                <li className="p-3 text-center text-gray-500">
+                  No notifications yet
                 </li>
-              ))
-            )}
-          </ul>
+              ) : (
+                notifications.map((notification) => (
+                  <li 
+                    key={notification._id} 
+                    onClick={() => handleNotificationClick(notification)}
+                    className={`p-3 rounded-lg shadow-sm cursor-pointer transition-all duration-200 hover:shadow-md ${
+                      notification.isRead ? 'bg-gray-50' : 
+                      notification.type === 'inquiry_received' ? 'bg-purple-50 border border-purple-100 hover:bg-purple-100' :
+                      notification.type === 'project_created' ? 'bg-green-50 border border-green-100 hover:bg-green-100' :
+                      notification.type === 'project_updated' ? 'bg-blue-50 border border-blue-100 hover:bg-blue-100' :
+                      'bg-red-50 border border-red-100 hover:bg-red-100'
+                    }`}
+                  >
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0 mr-3">
+                        {notification.type === 'inquiry_received' && (
+                          <svg className="h-5 w-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                        )}
+                        {notification.type === 'project_created' && (
+                          <svg className="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                        )}
+                        {notification.type === 'project_updated' && (
+                          <svg className="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        )}
+                        {notification.type === 'project_deleted' && (
+                          <svg className="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        )}
+                      </div>
+                      <div>
+                        <p className={`text-sm font-medium ${notification.isRead ? 'text-gray-600' : 'text-gray-800'}`}>
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                ))
+              )}
+            </ul>
+          )}
         </div>
       )}
 

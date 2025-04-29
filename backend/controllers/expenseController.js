@@ -28,8 +28,17 @@ export const getExpenses = asyncHandler(async (req, res) => {
     .limit(limit * 1)
     .skip((page - 1) * limit);
 
+  // Format the expenses to include full URLs for receipts
+  const formattedExpenses = expenses.map(expense => {
+    const expenseObj = expense.toObject();
+    if (expenseObj.receipt) {
+      expenseObj.receipt = `http://localhost:4000/uploads/${expenseObj.receipt}`;
+    }
+    return expenseObj;
+  });
+
   res.status(200).json({
-    expenses,
+    expenses: formattedExpenses,
     totalExpenses,
     currentPage: page,
     totalPages: Math.ceil(totalExpenses / limit)
@@ -125,5 +134,5 @@ export const deleteExpense = asyncHandler(async (req, res) => {
   }
 
   await expense.deleteOne();
-  res.status(200).json({ message: 'Expense deleted successfully' });
+  res.status(200).json({ id: req.params.id });
 });

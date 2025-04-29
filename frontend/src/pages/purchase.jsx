@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import logo from '../assets/images/logo.png';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const inputClassName = "w-full px-4 py-2 rounded-lg border-2 border-red-200 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all";
 
@@ -17,12 +19,36 @@ const PurchaseOrder = () => {
     description: ''
   });
 
+  // Add state for purchases list
+  const [purchases, setPurchases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState('All');
+
   // Add state for status messages
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
   // Add loading state
   const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch all purchases on component mount
+  useEffect(() => {
+    fetchPurchases();
+  }, []);
+
+  // Function to fetch all purchases
+  const fetchPurchases = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('http://localhost:4000/api/purchases');
+      setPurchases(response.data);
+    } catch (error) {
+      setErrorMessage('Failed to load purchases. Please refresh the page.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -52,6 +78,8 @@ const PurchaseOrder = () => {
         price: '',
         description: ''
       });
+      // Refresh purchases list
+      fetchPurchases();
     } catch (error) {
       setErrorMessage(error.response?.data?.message || 'Error creating purchase order');
     } finally {
@@ -59,78 +87,204 @@ const PurchaseOrder = () => {
     }
   };
 
+  // Function to delete a purchase
+  const handleDeletePurchase = async (id) => {
+    if (window.confirm('Are you sure you want to delete this purchase order?')) {
+      try {
+        setLoading(true);
+        await axios.delete(`http://localhost:4000/api/purchases/${id}`);
+        setPurchases(prevPurchases => prevPurchases.filter(purchase => purchase._id !== id));
+        setSuccessMessage('Purchase order deleted successfully!');
+      } catch (error) {
+        setErrorMessage('Failed to delete purchase order. Please try again.');
+      } finally {
+        setLoading(false);
+        setTimeout(() => {
+          setSuccessMessage('');
+          setErrorMessage('');
+        }, 3000);
+      }
+    }
+  };
+
+  // Function to download purchases as PDF
+  const downloadPDF = () => {
+    if (!filteredPurchases || filteredPurchases.length === 0) {
+      setErrorMessage('No data available to download');
+      return;
+    }
+
+    try {
+      // Create PDF document in landscape orientation
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+      });
+      
+      // Define colors
+      const primaryColor = [99, 0, 0]; // Dark red for header background
+      const textGray = [50, 50, 50]; // Dark gray for text
+      const lightBeige = [252, 234, 187]; // Light beige for table headers
+      const lightCream = [255, 248, 235]; // Light cream for table rows
+      
+      // Get page dimensions
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      
+      // Add header background - dark red
+      doc.setFillColor(...primaryColor);
+      doc.rect(0, 0, pageWidth, 25, 'F');
+      
+      // Add logo to the header - convert the imported logo to base64
+      const logoImg = new Image();
+      logoImg.src = logo;
+      
+      logoImg.onload = function() {
+        // Once the image is loaded, continue with PDF generation
+        // Create a canvas to draw the image and convert it to base64
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = logoImg.width;
+        canvas.height = logoImg.height;
+        ctx.drawImage(logoImg, 0, 0);
+        
+        // Get base64 representation
+        const logoBase64 = canvas.toDataURL('image/png');
+        
+        // Add the logo - match the position in the image
+        const logoHeight = 16; // Smaller logo
+        const logoWidth = (logoImg.width / logoImg.height) * logoHeight;
+        
+        // Calculate vertical positions to center-align logo and text
+        const headerHeight = 25; // Total header height
+        const logoY = (headerHeight - logoHeight) / 2; // Center the logo vertically
+        const textY = headerHeight / 2 + 2; // Center the text (with slight adjustment for visual alignment)
+        
+        doc.addImage(logoBase64, 'PNG', 35, logoY, logoWidth, logoHeight);
+        
+        // Add company name in header - position to match image
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(24);
+        doc.text('Red Brick Constructions', 35 + logoWidth + 10, textY);
+        
+        // Add generated date - match position in top right
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, pageWidth - 15, 16, { align: 'right' });
+        
+        // Add title section with white background - match the positioning
+        doc.setTextColor(...textGray);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Purchase Orders Report', 35, 45);
+        
+        // Add total count of purchases - match position
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Total purchases: ${filteredPurchases.length}`, pageWidth - 35, 45, { align: 'right' });
+        
+        // If filter is active, add filter criteria
+        if (searchQuery) {
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+          doc.text(`Filtered by search: "${searchQuery}"`, 35, 50);
+        }
+        
+        // Prepare columns with custom widths
+        const columns = [
+          { header: 'Project Code', dataKey: 'projectCode' },
+          { header: 'Material Type', dataKey: 'materialType' },
+          { header: 'Quantity', dataKey: 'quantity' },
+          { header: 'Unit', dataKey: 'unit' },
+          { header: 'Price', dataKey: 'price' },
+          { header: 'Total', dataKey: 'total' },
+          { header: 'Date', dataKey: 'date' },
+        ];
+        
+        // Prepare rows
+        const rows = filteredPurchases.map(purchase => {
+          return {
+            projectCode: purchase.projectCode,
+            materialType: purchase.materialType,
+            quantity: purchase.quantity.toString(),
+            unit: purchase.unit,
+            price: `$${purchase.price.toFixed(2)}`,
+            total: `$${(purchase.price * purchase.quantity).toFixed(2)}`,
+            date: new Date(purchase.createdAt).toLocaleDateString(),
+          };
+        });
+        
+        // Create table with styling
+        autoTable(doc, {
+          head: [columns.map(col => col.header)],
+          body: rows.map(row => columns.map(col => row[col.dataKey])),
+          startY: 60,
+          theme: 'grid',
+          tableWidth: 'auto',
+          margin: { left: 35, right: 35 },
+          styles: {
+            fontSize: 10,
+            cellPadding: { top: 8, right: 5, bottom: 8, left: 5 },
+            lineColor: [220, 220, 220],
+            lineWidth: 0.1,
+            overflow: 'linebreak',
+          },
+          headStyles: {
+            fillColor: [...lightBeige],
+            textColor: [...textGray],
+            fontStyle: 'bold',
+            halign: 'left',
+          },
+          bodyStyles: {
+            fillColor: [...lightCream],
+          },
+          alternateRowStyles: {
+            fillColor: [...lightCream],
+          },
+        });
+        
+        // Save the PDF
+        const fileName = `purchase-orders-${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
+        
+        setSuccessMessage('PDF downloaded successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      };
+      
+      // Add error handler for logo loading
+      logoImg.onerror = function() {
+        setErrorMessage('Error loading logo image');
+      };
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      setErrorMessage(`Failed to generate PDF: ${error.message}`);
+      setTimeout(() => setErrorMessage(''), 3000);
+    }
+  };
+
+  // Filter purchases based on search query
+  const filteredPurchases = purchases.filter(purchase => {
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      purchase.projectCode.toLowerCase().includes(searchLower) ||
+      purchase.materialType.toLowerCase().includes(searchLower)
+    );
+  });
+
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <nav className="fixed h-full w-64 bg-white border-r border-gray-200 shadow-lg">
-             <div className="p-6">
-               <div className="flex items-center gap-3 mb-10">
-                 <motion.img 
-                   src={logo} 
-                   alt="REDBRICK Logo" 
-                   className="w-10 h-10 object-contain"
-                 />
-                 <span className="text-red-600 text-xl font-bold">RedBrick</span>
-               </div>
-     
-               <div className="space-y-1">
-                 <Link 
-                   to="/" 
-                   className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all"
-                 >
-                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                   </svg>
-                   <span>Home</span>
-                 </Link>
-                 
-                 <Link 
-                   to="/task" 
-                   className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all"
-                 >
-                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                   </svg>
-                   <span>Tasks</span>
-                 </Link>
-                 <Link 
-                   to="/purchase" 
-                   className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all"
-                 >
-                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                   </svg>
-                   <span>Purchase</span>
-                 </Link>
-                 <Link 
-                   to="/machineInventory" 
-                   className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all"
-                 >
-                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                   </svg>
-                   <span>Machinery Inventory</span>
-                 </Link>
-                 <Link 
-                   to="/inventory" 
-                   className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all"
-                 >
-                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                   </svg>
-                   <span>Site Diary</span>
-                 </Link>
-               </div>
-             </div>
-           </nav>
-
       {/* Main Content */}
-      <div className="flex-1 ml-64">
+      <div className="flex-1 overflow-auto">
         <div className="p-8">
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-2xl font-bold text-gray-800 mb-8">Purchase Order</h1>
+            <h1 className="text-2xl font-bold text-gray-800 mb-8">Purchase Orders</h1>
 
+            {/* Form Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Create New Purchase Order</h2>
+              
               {successMessage && (
                 <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 mb-6">
                   {successMessage}
@@ -245,6 +399,144 @@ const PurchaseOrder = () => {
                   </button>
                 </div>
               </form>
+            </div>
+
+            {/* Purchases List Section */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+              <div className="flex justify-between items-center p-6 border-b border-gray-100">
+                <h2 className="text-xl font-semibold text-gray-800">Purchase Orders List</h2>
+                <div className="flex gap-3 items-center">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search by project code or material..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className={`${inputClassName} min-w-[300px] pl-10`}
+                    />
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                      <svg
+                        className="w-5 h-5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="whitespace-nowrap px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    onClick={downloadPDF}
+                    className="whitespace-nowrap px-6 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-all shadow-sm flex items-center gap-2"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    Download PDF
+                  </button>
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="flex justify-center items-center h-40">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+              ) : filteredPurchases.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No purchase orders found. Create a new purchase order to get started.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-600">
+                          Project Code
+                        </th>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-600">
+                          Material Type
+                        </th>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-600">
+                          Quantity
+                        </th>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-600">
+                          Unit
+                        </th>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-600">
+                          Price ($)
+                        </th>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-600">
+                          Total ($)
+                        </th>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-600">
+                          Date
+                        </th>
+                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-600">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredPurchases.map((purchase) => (
+                        <tr key={purchase._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            {purchase.projectCode}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            {purchase.materialType}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            {purchase.quantity}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            {purchase.unit === 'kg' ? 'Kilograms (kg)' : 
+                             purchase.unit === 'm3' ? 'Cubes (Cu)' : 
+                             purchase.unit === 'bags' ? 'Bags' : purchase.unit}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            ${purchase.price.toFixed(2)}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            ${(purchase.price * purchase.quantity).toFixed(2)}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            {new Date(purchase.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => handleDeletePurchase(purchase._id)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </div>

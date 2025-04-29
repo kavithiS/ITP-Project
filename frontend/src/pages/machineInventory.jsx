@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import logo from '../assets/images/logo.png';
 import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const InventoryManagement = () => {
   const navigate = useNavigate();
@@ -141,100 +142,282 @@ const InventoryManagement = () => {
       const doc = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
-        format: 'a4'
-      });
-
-      // Add title
-      doc.setFontSize(16);
-      doc.text('Construction Equipment Inventory Report', 15, 20);
-      
-      // Add date
-      doc.setFontSize(10);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 15, 30);
-
-      // Manual table creation
-      const startY = 40;
-      const margin = 15;
-      const cellHeight = 10;
-      const columnWidths = [50, 40, 30, 40, 50];
-      const totalWidth = columnWidths.reduce((a, b) => a + b, 0);
-      
-      // Calculate X positions for each column
-      const xPositions = [margin];
-      for (let i = 1; i < columnWidths.length; i++) {
-        xPositions[i] = xPositions[i-1] + columnWidths[i-1];
-      }
-      
-      // Draw header
-      const headers = ['Equipment Name', 'Type', 'Status', 'Location', 'Date'];
-      doc.setFillColor(220, 53, 69);
-      doc.rect(margin, startY, totalWidth, cellHeight, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(8);
-      doc.setFont(undefined, 'bold');
-      
-      headers.forEach((header, index) => {
-        doc.text(header, xPositions[index] + 2, startY + 6);
+        format: 'a4',
       });
       
-      // Draw rows
-      doc.setTextColor(0, 0, 0);
-      doc.setFont(undefined, 'normal');
-      let currentY = startY + cellHeight;
+      // Define colors - Match the image exactly
+      const primaryColor = [99, 0, 0]; // Dark red for header background
+      const textGray = [50, 50, 50]; // Dark gray for text
+      const lightBeige = [252, 234, 187]; // Light beige for table headers
+      const lightCream = [255, 248, 235]; // Light cream for table rows
       
-      filteredMachines.forEach((machine, idx) => {
-        // Draw row background
-        doc.setFillColor(idx % 2 === 0 ? 255 : 245);
-        doc.rect(margin, currentY, totalWidth, cellHeight, 'F');
+      // Get page dimensions
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      
+      // Add header background - dark red
+      doc.setFillColor(...primaryColor);
+      doc.rect(0, 0, pageWidth, 25, 'F');
+      
+      // Add logo to the header - convert the imported logo to base64
+      const logoImg = new Image();
+      logoImg.src = logo;
+      
+      logoImg.onload = function() {
+        // Once the image is loaded, continue with PDF generation
+        // Create a canvas to draw the image and convert it to base64
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = logoImg.width;
+        canvas.height = logoImg.height;
+        ctx.drawImage(logoImg, 0, 0);
         
-        // Draw cell data
-        const rowData = [
-          machine.name || 'N/A',
-          machine.type || 'N/A',
-          machine.status || 'N/A',
-          machine.location || 'N/A',
-          machine.status === 'Stocked' 
-            ? `Purchase: ${machine.purchaseDate ? new Date(machine.purchaseDate).toLocaleDateString() : 'N/A'}` 
-            : `Rental: ${machine.rentalStart ? new Date(machine.rentalStart).toLocaleDateString() : 'N/A'}`
+        // Get base64 representation
+        const logoBase64 = canvas.toDataURL('image/png');
+        
+        // Add the logo - match the position in the image
+        const logoHeight = 16; // Smaller logo
+        const logoWidth = (logoImg.width / logoImg.height) * logoHeight;
+        
+        // Calculate vertical positions to center-align logo and text
+        const headerHeight = 25; // Total header height
+        const logoY = (headerHeight - logoHeight) / 2; // Center the logo vertically
+        const textY = headerHeight / 2 + 2; // Center the text (with slight adjustment for visual alignment)
+        
+        doc.addImage(logoBase64, 'PNG', 35, logoY, logoWidth, logoHeight);
+        
+        // Add company name in header - position to match image
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(24);
+        doc.text('Red Brick Constructions', 35 + logoWidth + 10, textY);
+        
+        // Add generated date - match position in top right
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, pageWidth - 15, 16, { align: 'right' });
+        
+        // Add title section with white background - match the positioning
+        doc.setTextColor(...textGray);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Equipment Inventory Report', 35, 45);
+        
+        // Add total count of equipment - match position
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Total equipment: ${filteredMachines.length}`, pageWidth - 35, 45, { align: 'right' });
+        
+        // If filter is active, add filter criteria
+        if (filter !== 'All' || searchQuery) {
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+          let filterText = '';
+          if (filter !== 'All') {
+            filterText += `Status: "${filter}"`;
+          }
+          if (searchQuery) {
+            filterText += filterText ? ` | Search: "${searchQuery}"` : `Search: "${searchQuery}"`;
+          }
+          doc.text(`Filtered by: ${filterText}`, 35, 50);
+        }
+        
+        // Prepare columns with custom widths
+        const columns = [
+          { header: 'Equipment Name', dataKey: 'name' },
+          { header: 'Type', dataKey: 'type' },
+          { header: 'Status', dataKey: 'status' },
+          { header: 'Condition', dataKey: 'condition' },
+          { header: 'Location', dataKey: 'location' },
+          { header: 'Key Dates', dataKey: 'dates' },
         ];
         
-        rowData.forEach((text, index) => {
-          // Truncate text if too long
-          let displayText = text;
-          if (text.length > 20) {
-            displayText = text.substring(0, 17) + '...';
+        // Prepare rows
+        const rows = filteredMachines.map(machine => {
+          // Format dates based on status
+          let dates = '';
+          if (machine.status === 'Stocked') {
+            dates = `Purchased: ${machine.purchaseDate ? new Date(machine.purchaseDate).toLocaleDateString() : 'N/A'}`;
+            if (machine.lastMaintenanceDate) {
+              dates += `\nLast Maintained: ${new Date(machine.lastMaintenanceDate).toLocaleDateString()}`;
+            }
+          } else {
+            dates = `Rental: ${machine.rentalStart ? new Date(machine.rentalStart).toLocaleDateString() : 'N/A'}`;
+            if (machine.rentalEnd) {
+              dates += ` to ${new Date(machine.rentalEnd).toLocaleDateString()}`;
+            }
+            if (machine.rentalCost) {
+              dates += `\nCost: ${machine.rentalCost}`;
+            }
           }
-          doc.text(displayText, xPositions[index] + 2, currentY + 6);
+          
+          return {
+            name: `${machine.name}${machine.manufacturer ? '\n' + machine.manufacturer : ''}`,
+            type: machine.type || 'N/A',
+            status: machine.status === 'Stocked' ? 'Company Owned' : 'Rental',
+            condition: machine.condition || 'N/A',
+            location: machine.location || 'N/A',
+            dates: dates
+          };
         });
         
-        currentY += cellHeight;
+        // Create table with styling to match the image
+        autoTable(doc, {
+          head: [columns.map(col => col.header)],
+          body: rows.map(row => columns.map(col => row[col.dataKey])),
+          startY: 60, // Match the position in image
+          theme: 'grid',
+          tableWidth: 'auto',
+          margin: { left: 35, right: 35 }, // Match the margins in image
+          styles: {
+            fontSize: 10,
+            cellPadding: { top: 8, right: 5, bottom: 8, left: 5 },
+            lineColor: [220, 220, 220],
+            lineWidth: 0.1,
+            overflow: 'linebreak',
+          },
+          headStyles: {
+            fillColor: [...lightBeige], // Match the beige color from image
+            textColor: [...textGray],
+            fontStyle: 'bold',
+            halign: 'left',
+          },
+          bodyStyles: {
+            fillColor: [...lightCream], // Match the cream color from image
+          },
+          alternateRowStyles: {
+            fillColor: [...lightCream], // Keep all rows the same color like in image
+          },
+        });
         
-        // Add new page if needed
-        if (currentY > doc.internal.pageSize.height - 20) {
-          doc.addPage();
-          currentY = 20;
+        // Save the PDF
+        const fileName = `equipment-inventory-${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
+        
+        setSuccessMessage('PDF downloaded successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      };
+      
+      // Add error handler for logo loading
+      logoImg.onerror = function() {
+        console.error('Error loading logo image');
+        generatePDFWithoutLogo();
+      };
+      
+      // Fallback function to generate PDF without logo
+      const generatePDFWithoutLogo = () => {
+        // Add company name in header
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(24);
+        doc.text('Red Brick Constructions', 35, 16);
+        
+        // Add generated date
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, pageWidth - 15, 16, { align: 'right' });
+        
+        // Add title
+        doc.setTextColor(...textGray);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Equipment Inventory Report', 35, 45);
+        
+        // Add total count of equipment
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Total equipment: ${filteredMachines.length}`, pageWidth - 35, 45, { align: 'right' });
+        
+        // If filter is active, add filter criteria
+        if (filter !== 'All' || searchQuery) {
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+          let filterText = '';
+          if (filter !== 'All') {
+            filterText += `Status: "${filter}"`;
+          }
+          if (searchQuery) {
+            filterText += filterText ? ` | Search: "${searchQuery}"` : `Search: "${searchQuery}"`;
+          }
+          doc.text(`Filtered by: ${filterText}`, 35, 50);
         }
-      });
+        
+        // Prepare columns
+        const columns = [
+          { header: 'Equipment Name', dataKey: 'name' },
+          { header: 'Type', dataKey: 'type' },
+          { header: 'Status', dataKey: 'status' },
+          { header: 'Condition', dataKey: 'condition' },
+          { header: 'Location', dataKey: 'location' },
+          { header: 'Key Dates', dataKey: 'dates' },
+        ];
+        
+        // Prepare rows
+        const rows = filteredMachines.map(machine => {
+          // Format dates based on status
+          let dates = '';
+          if (machine.status === 'Stocked') {
+            dates = `Purchased: ${machine.purchaseDate ? new Date(machine.purchaseDate).toLocaleDateString() : 'N/A'}`;
+            if (machine.lastMaintenanceDate) {
+              dates += `\nLast Maintained: ${new Date(machine.lastMaintenanceDate).toLocaleDateString()}`;
+            }
+          } else {
+            dates = `Rental: ${machine.rentalStart ? new Date(machine.rentalStart).toLocaleDateString() : 'N/A'}`;
+            if (machine.rentalEnd) {
+              dates += ` to ${new Date(machine.rentalEnd).toLocaleDateString()}`;
+            }
+            if (machine.rentalCost) {
+              dates += `\nCost: ${machine.rentalCost}`;
+            }
+          }
+          
+          return {
+            name: `${machine.name}${machine.manufacturer ? '\n' + machine.manufacturer : ''}`,
+            type: machine.type || 'N/A',
+            status: machine.status === 'Stocked' ? 'Company Owned' : 'Rental',
+            condition: machine.condition || 'N/A',
+            location: machine.location || 'N/A',
+            dates: dates
+          };
+        });
+        
+        // Create table with styling to match the image
+        autoTable(doc, {
+          head: [columns.map(col => col.header)],
+          body: rows.map(row => columns.map(col => row[col.dataKey])),
+          startY: 60,
+          theme: 'grid',
+          tableWidth: 'auto',
+          margin: { left: 35, right: 35 },
+          styles: {
+            fontSize: 10,
+            cellPadding: { top: 8, right: 5, bottom: 8, left: 5 },
+            lineColor: [220, 220, 220],
+            lineWidth: 0.1,
+            overflow: 'linebreak',
+          },
+          headStyles: {
+            fillColor: [...lightBeige],
+            textColor: [...textGray],
+            fontStyle: 'bold',
+            halign: 'left',
+          },
+          bodyStyles: {
+            fillColor: [...lightCream],
+          },
+          alternateRowStyles: {
+            fillColor: [...lightCream],
+          },
+        });
+        
+        // Save the PDF
+        const fileName = `equipment-inventory-${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
+        
+        setSuccessMessage('PDF downloaded successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      };
       
-      // Draw table borders
-      doc.setDrawColor(0);
-      doc.rect(margin, startY, totalWidth, currentY - startY);
-      
-      // Vertical lines
-      for (let i = 1; i < xPositions.length; i++) {
-        doc.line(xPositions[i], startY, xPositions[i], currentY);
-      }
-      
-      // Header separator line
-      doc.line(margin, startY + cellHeight, margin + totalWidth, startY + cellHeight);
-
-      // Save the PDF
-      const fileName = `equipment-inventory-${new Date().toISOString().split('T')[0]}.pdf`;
-      doc.save(fileName);
-      
-      setSuccessMessage('PDF downloaded successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-
     } catch (error) {
       console.error('PDF generation error:', error);
       setErrorMessage(`Failed to generate PDF: ${error.message}`);
@@ -258,117 +441,8 @@ const InventoryManagement = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <nav className="fixed h-full w-64 bg-white border-r border-gray-200 shadow-lg">
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-10">
-            <motion.img src={logo} alt="REDBRICK Logo" className="w-10 h-10 object-contain" />
-            <span className="text-red-600 text-xl font-bold">RedBrick</span>
-          </div>
-
-          <div className="space-y-1">
-            <Link
-              to="/"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                />
-              </svg>
-              <span>Home</span>
-            </Link>
-
-            <Link
-              to="/task"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-              <span>Tasks</span>
-            </Link>
-            <Link
-              to="/purchase"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                />
-              </svg>
-              <span>Purchase</span>
-            </Link>
-            <Link
-              to="/machineInventory"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                />
-              </svg>
-              <span>Machinery Inventory</span>
-            </Link>
-            <Link
-              to="/inventory"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-              <span>Site Diary</span>
-            </Link>
-          </div>
-        </div>
-      </nav>
-
       {/* Main Content */}
-      <div className="flex-1 ml-64 bg-gray-50">
+      <div className="flex-1">
         <div className="p-8">
           <div className="max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-8">

@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const SignIn = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     pwd: "",
@@ -40,14 +42,15 @@ const SignIn = () => {
       }
 
       if (data.data) {
-        localStorage.setItem("authToken", data.data.token);
-        localStorage.setItem("userID", data.data.user._id);
-        localStorage.setItem("userEmail", data.data.user.email);
-        localStorage.setItem("userName", data.data.user.name);
-        localStorage.setItem("userRole", data.data.user.role);
+        // Use the login function from AuthContext instead of manually setting localStorage
+        login(data.data);
 
-        // Use navigate instead of window.location
-        navigate("/userdashboard");
+        // Redirect based on user role
+        if (data.data.user.role === "ADMIN") {
+          navigate("/admin-dashboard");
+        } else {
+          navigate("/userdashboard");
+        }
       }
     } catch (err) {
       setError(err.message || "An error occurred during sign in");

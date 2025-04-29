@@ -24,4 +24,18 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Delete purchase order
+router.delete('/:id', async (req, res) => {
+  try {
+    const purchase = await Purchase.findById(req.params.id);
+    if (!purchase) {
+      return res.status(404).json({ message: 'Purchase order not found' });
+    }
+    await purchase.deleteOne();
+    res.status(200).json({ message: 'Purchase order deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting purchase order', error: error.message });
+  }
+});
+
 export default router;

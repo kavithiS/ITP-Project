@@ -1,17 +1,28 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   FiUsers,
   FiDownload,
   FiUpload,
   FiMessageSquare,
+  FiBox,
+  FiTruck,
+  FiCheckSquare
 } from "react-icons/fi";
 
 const UserDashboard = () => {
-  if (localStorage.getItem("userRole") !== "ADMIN") {
-    window.location.href = "/";
-  }
+  const navigate = useNavigate();
+  const { user, isAuthenticated, isAdmin } = useAuth();
+  
+  // Use AuthContext to check if user is admin
+  useEffect(() => {
+    if (!isAuthenticated || !isAdmin()) {
+      navigate('/');
+    }
+  }, [isAuthenticated, isAdmin, navigate]);
+  
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -284,7 +295,7 @@ const UserDashboard = () => {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {localStorage.getItem("userName")}
+            Welcome back, {user?.name}
           </h1>
           <p className="mt-2 text-gray-600">
             Here's what's happening with your projects today.

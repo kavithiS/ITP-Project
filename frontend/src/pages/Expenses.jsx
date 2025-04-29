@@ -149,11 +149,24 @@ const ExpensesPage = () => {
       try {
         const response = await axios.get("/api/expenses");
         if (response.data) {
-          setExpenses(
-            Array.isArray(response.data)
-              ? response.data
-              : response.data.expenses || []
-          );
+          // Process expenses to format receipt URLs
+          const processedExpenses = Array.isArray(response.data)
+            ? response.data
+            : response.data.expenses || [];
+            
+          // Map through expenses and add full URLs to receipt paths
+          const expensesWithFormattedReceipts = processedExpenses.map(expense => {
+            if (expense.receipt && !expense.receipt.startsWith('data:') && !expense.receipt.startsWith('http')) {
+              // Add server URL to receipt filename
+              return {
+                ...expense,
+                receipt: `http://localhost:4000/uploads/${expense.receipt}`
+              };
+            }
+            return expense;
+          });
+          
+          setExpenses(expensesWithFormattedReceipts);
         }
       } catch (err) {
         setError(err.response?.data?.message || "Failed to load expenses");
