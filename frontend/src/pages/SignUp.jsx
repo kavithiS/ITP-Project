@@ -245,7 +245,7 @@ const SignUpPage = () => {
                     }}
                     required
                     className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
-                    placeholder="John"
+                    placeholder="First Name"
                   />
                 </div>
               </div>
@@ -275,7 +275,7 @@ const SignUpPage = () => {
                     onChange={handleChange}
                     required
                     className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
-                    placeholder="Doe"
+                    placeholder="Last Name"
                   />
                 </div>
               </div>
