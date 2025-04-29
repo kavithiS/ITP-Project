@@ -1,10 +1,8 @@
 import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 
 const SignIn = () => {
-  if (localStorage.getItem("authToken")) {
-    window.location.href = "/userdashboard";
-  }
-
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     pwd: "",
@@ -26,7 +24,8 @@ const SignIn = () => {
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:4000/api/user/SignIn", {
+      // Update port to match your backend port (if you changed it)
+      const response = await fetch("http://localhost:4000/api/user/signin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -36,23 +35,20 @@ const SignIn = () => {
 
       const data = await response.json();
 
-      if (data.error) {
-        throw new Error("Please Check Your Credentials!");
+      if (!response.ok) {
+        throw new Error(data.message || "Please Check Your Credentials!");
       }
 
-      // Store the token or user data in localStorage or context
       if (data.data) {
         localStorage.setItem("authToken", data.data.token);
         localStorage.setItem("userID", data.data.user._id);
         localStorage.setItem("userEmail", data.data.user.email);
         localStorage.setItem("userName", data.data.user.name);
         localStorage.setItem("userRole", data.data.user.role);
+
+        // Use navigate instead of window.location
+        navigate("/userdashboard");
       }
-
-      console.log("Authentication successful:", data);
-
-      // Redirect user to dashboard or home page
-      window.location.href = "/userdashboard";
     } catch (err) {
       setError(err.message || "An error occurred during sign in");
       console.error("Sign in error:", err);
@@ -92,6 +88,7 @@ const SignIn = () => {
                 id="email"
                 name="email"
                 type="email"
+                pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
                 required
                 className="block w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition duration-200"
                 placeholder="Enter your email"
@@ -110,6 +107,7 @@ const SignIn = () => {
                 id="pwd"
                 name="pwd"
                 type="password"
+                title="Password must be at least 8 characters and include uppercase, lowercase, number and special character"
                 required
                 className="block w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition duration-200"
                 placeholder="Enter your password"
@@ -134,12 +132,12 @@ const SignIn = () => {
                 Remember me
               </label>
             </div>
-            <a
-              href="#"
+            <Link
+              to="/forgot-password"
               className="text-sm font-medium text-red-600 hover:text-red-700 transition duration-200"
             >
               Forgot password?
-            </a>
+            </Link>
           </div>
 
           <button

@@ -19,6 +19,8 @@ import ContactUs from "./pages/ContactUs";
 import InquirePage from "./pages/InquirePage";
 import InquiriesPage from "./pages/InquiriesPage";
 import TeamPage from "./pages/TeamPage";
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (
@@ -47,6 +49,8 @@ function App() {
         <Route path="/inquire" element={<InquirePage />} />
         <Route path="/inquiries" element={<InquiriesPage />} />
         <Route path="/team" element={<TeamPage />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
       </Routes>
     </Router>
   );

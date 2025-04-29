@@ -10,10 +10,6 @@ import {
 } from "react-icons/fi";
 
 const SignUpPage = () => {
-  if (localStorage.getItem("authToken")) {
-    window.location.href = "/userdashboard";
-  }
-
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -38,20 +34,66 @@ const SignUpPage = () => {
     if (error) setError("");
   };
 
+  const passwordsMatch = () => {
+    return formData.pwd === formData.confirmPassword;
+  };
+
+  const handleProfilePicChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // File size validation (2MB limit)
+      if (file.size > 1024 * 1024 * 2) {
+        setError("Profile picture must be less than 2MB");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, proPic: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
     // Client-side validation
-    if (formData.pwd !== formData.confirmPassword) {
+    if (!passwordsMatch()) {
       setError("Passwords do not match");
       setIsLoading(false);
       return;
     }
 
-    if (formData.pwd.length < 6) {
-      setError("Password must be at least 6 characters long");
+    if (formData.pwd.length < 8) {
+      setError("Password must be at least 8 characters long");
+      setIsLoading(false);
+      return;
+    }
+
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(formData.pwd)) {
+      setError(
+        "Password must include uppercase, lowercase, number and special character"
+      );
+      setIsLoading(false);
+      return;
+    }
+
+    const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address");
+      setIsLoading(false);
+      return;
+    }
+
+    const currentDate = new Date();
+    const selectedDate = new Date(formData.dob);
+    if (selectedDate > currentDate) {
+      setError("Date of birth cannot be in the future");
       setIsLoading(false);
       return;
     }
@@ -167,16 +209,7 @@ const SignUpPage = () => {
                   id="proPic"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        setFormData({ ...formData, proPic: reader.result });
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
+                  onChange={handleProfilePicChange}
                 />
                 <label
                   htmlFor="proPic"
@@ -212,7 +245,7 @@ const SignUpPage = () => {
                     }}
                     required
                     className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
-                    placeholder="John"
+                    placeholder="First Name"
                   />
                 </div>
               </div>
@@ -242,7 +275,7 @@ const SignUpPage = () => {
                     onChange={handleChange}
                     required
                     className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
-                    placeholder="Doe"
+                    placeholder="Last Name"
                   />
                 </div>
               </div>
@@ -317,6 +350,7 @@ const SignUpPage = () => {
                 <input
                   type="email"
                   name="email"
+                  pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
                   value={formData.email}
                   onChange={handleChange}
                   required
@@ -338,6 +372,8 @@ const SignUpPage = () => {
                   <input
                     type="password"
                     name="pwd"
+                    pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+                    title="Password must be at least 8 characters and include uppercase, lowercase, number and special character"
                     value={formData.pwd}
                     onChange={handleChange}
                     required
@@ -345,6 +381,10 @@ const SignUpPage = () => {
                     placeholder="Create a password"
                   />
                 </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Must include uppercase, lowercase, number and special
+                  character (8+ characters)
+                </p>
               </div>
 
               <div className="relative">
@@ -358,13 +398,57 @@ const SignUpPage = () => {
                   <input
                     type="password"
                     name="confirmPassword"
+                    pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+                    title="Password must be at least 8 characters and include uppercase, lowercase, number and special character"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
-                    className="pl-10 w-full rounded-lg border-gray-300 focus:ring-red-500 focus:border-red-500"
+                    className={`pl-10 w-full rounded-lg focus:ring-red-500 focus:border-red-500 ${
+                      formData.pwd && formData.confirmPassword
+                        ? passwordsMatch()
+                          ? "border-green-300"
+                          : "border-red-300"
+                        : "border-gray-300"
+                    }`}
                     placeholder="Confirm your password"
                   />
+                  {formData.pwd && formData.confirmPassword && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      {passwordsMatch() ? (
+                        <svg
+                          className="h-5 w-5 text-green-500"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="h-5 w-5 text-red-500"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                  )}
                 </div>
+                {formData.pwd &&
+                  formData.confirmPassword &&
+                  !passwordsMatch() && (
+                    <p className="mt-1 text-xs text-red-500">
+                      Passwords do not match
+                    </p>
+                  )}
               </div>
             </div>
 
@@ -392,10 +476,16 @@ const SignUpPage = () => {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={
+                isLoading ||
+                (formData.pwd && formData.confirmPassword && !passwordsMatch())
+              }
               className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white transition-colors
                 ${
-                  isLoading
+                  isLoading ||
+                  (formData.pwd &&
+                    formData.confirmPassword &&
+                    !passwordsMatch())
                     ? "bg-red-400 cursor-not-allowed"
                     : "bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                 }`}

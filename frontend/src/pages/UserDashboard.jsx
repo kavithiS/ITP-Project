@@ -3,19 +3,12 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 import {
   FiUsers,
-  FiTruck,
-  FiBox,
-  FiCheckSquare,
-  FiCalendar,
   FiDownload,
   FiUpload,
   FiMessageSquare,
 } from "react-icons/fi";
 
 const UserDashboard = () => {
-  if (!localStorage.getItem("authToken")) {
-    window.location.href = "/signIn";
-  }
   if (localStorage.getItem("userRole") !== "ADMIN") {
     window.location.href = "/";
   }
@@ -298,144 +291,12 @@ const UserDashboard = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat) => (
-            <div
-              key={stat.id}
-              className="bg-white rounded-xl shadow-sm p-6 transition-all hover:shadow-md"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    {stat.name}
-                  </p>
-                  <p className="mt-2 text-3xl font-semibold text-gray-900">
-                    {stat.value}
-                  </p>
-                </div>
-                <div className="bg-red-50 p-3 rounded-lg">
-                  <stat.icon className="h-6 w-6 text-red-600" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <span
-                  className={`text-sm font-medium ${
-                    stat.changeType === "increase"
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {stat.change}
-                </span>
-                <span className="text-sm text-gray-600"> from last month</span>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Remove this entire stats grid section */}
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat) => (...))}
+        </div> */}
 
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Quick Access</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {quickLinks.map((link, index) => (
-              <Link
-                key={index}
-                to={link.path}
-                className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center"
-              >
-                {link.name === "Customer Inquiries" && <FiMessageSquare className="mx-auto mb-2 text-xl text-blue-600" />}
-                <span className="font-medium">{link.name}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Recent Projects
-            </h2>
-            <div className="space-y-4">
-              {recentProjects.map((project) => (
-                <div
-                  key={project.id}
-                  className="border-b border-gray-100 last:border-0 pb-4 last:pb-0"
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium text-gray-900">
-                      {project.name}
-                    </span>
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full ${
-                        project.status === "In Progress"
-                          ? "bg-blue-100 text-blue-800"
-                          : project.status === "Near Completion"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {project.status}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-red-600 h-2 rounded-full"
-                      style={{ width: `${project.progress}%` }}
-                    />
-                  </div>
-                  <div className="mt-1 text-xs text-gray-500">
-                    {project.progress}% Complete
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Upcoming Tasks
-            </h2>
-            <div className="space-y-4">
-              {upcomingTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div
-                      className={`w-2 h-2 rounded-full ${
-                        task.priority === "High"
-                          ? "bg-red-500"
-                          : task.priority === "Medium"
-                          ? "bg-yellow-500"
-                          : "bg-green-500"
-                      }`}
-                    />
-                    <div>
-                      <p className="font-medium text-gray-900">{task.title}</p>
-                      <p className="text-sm text-gray-500">
-                        <FiCalendar className="inline-block mr-1" />
-                        {new Date(task.date).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <span
-                    className={`px-2 py-1 text-xs rounded-full ${
-                      task.priority === "High"
-                        ? "bg-red-100 text-red-800"
-                        : task.priority === "Medium"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-green-100 text-green-800"
-                    }`}
-                  >
-                    {task.priority}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
+        <div className="w-full bg-white rounded-xl shadow-lg p-6 mt-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold text-red-700">
               User Management
@@ -584,64 +445,6 @@ const UserDashboard = () => {
               </h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2 flex justify-center">
-                    <div className="relative">
-                      <img
-                        src={
-                          newUser.proPic ||
-                          "https://th.bing.com/th/id/OIP._oHjxcDbPRe0HSQA1B4SygHaHa?rs=1&pid=ImgDetMain"
-                        }
-                        alt="Profile"
-                        className="w-24 h-24 rounded-full object-cover border-2 border-red-500"
-                        onError={(e) => {
-                          e.target.src =
-                            "https://th.bing.com/th/id/OIP._oHjxcDbPRe0HSQA1B4SygHaHa?rs=1&pid=ImgDetMain";
-                        }}
-                      />
-                      <input
-                        type="file"
-                        id="proPic"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setNewUser({ ...newUser, proPic: reader.result });
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
-
-                      <label
-                        htmlFor="proPic"
-                        className="absolute bottom-0 right-0 bg-red-500 text-white p-1 rounded-full cursor-pointer"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        </svg>
-                      </label>
-                    </div>
-                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
                       First Name

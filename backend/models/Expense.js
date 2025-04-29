@@ -12,23 +12,24 @@ const expenseSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['material', 'labor', 'equipment', 'transportation', 'utility', 'permit', 'other']
+    enum: ['material', 'labor', 'equipment', 'transport', 'utilities', 'other']
   },
   date: {
     type: Date,
     required: true
   },
-  description: String,
   paymentMethod: {
     type: String,
-    enum: ['cash', 'credit', 'debit', 'check', 'transfer'],
-    default: 'cash'
+    required: true,
+    enum: ['cash', 'credit', 'debit', 'check', 'transfer']
   },
   projectId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Project'
+    type: String,
+    required: true
   },
-  receipt: String
+  description: {
+    type: String
+  }
 }, {
   timestamps: true
 });
