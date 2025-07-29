@@ -316,9 +316,11 @@ const ConstructionDashboard = () => {
       message: `New project created: ${projectName}`,
       timestamp: 'Just now',
       type: 'project_created',
-      projectId: projectId
+      projectId: projectId,
+      isRead: false
     };
     setNotifications(prev => [newNotification, ...prev]);
+    setNotificationCount(prev => prev + 1);
   };
 
   const addEditProjectNotification = (projectName, projectId) => {
@@ -327,9 +329,11 @@ const ConstructionDashboard = () => {
       message: `Project updated: ${projectName}`,
       timestamp: 'Just now',
       type: 'project_updated',
-      projectId: projectId
+      projectId: projectId,
+      isRead: false
     };
     setNotifications(prev => [newNotification, ...prev]);
+    setNotificationCount(prev => prev + 1);
   };
 
   const addDeleteProjectNotification = (projectName) => {
@@ -391,10 +395,10 @@ const ConstructionDashboard = () => {
     }
   };
 
-  // Add function to handle notification click
+  // Update the handleNotificationClick function
   const handleNotificationClick = async (notification) => {
-    // Mark notification as read
     try {
+      // Mark notification as read
       await axios.put(`${NOTIFICATIONS_API_URL}/${notification._id}`, {
         isRead: true
       });
@@ -415,14 +419,20 @@ const ConstructionDashboard = () => {
       setIsNotificationOpen(false);
       
       // Navigate based on notification type
-      if (notification.type === 'inquiry_received' && notification.inquiryId) {
-        // Navigate to inquiries page
-        navigate('/inquiries');
-      } else if (notification.type === 'project_created' || notification.type === 'project_updated') {
-        // For project notifications, navigate to the project if projectId exists
-        if (notification.projectId) {
-          navigate(`/projects/${notification.projectId}`);
-        }
+      switch (notification.type) {
+        case 'project_created':
+        case 'project_updated':
+          if (notification.projectId) {
+            navigate(`/projects/${notification.projectId}`);
+          }
+          break;
+        case 'inquiry_received':
+          if (notification.inquiryId) {
+            navigate('/inquiries');
+          }
+          break;
+        default:
+          break;
       }
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -966,7 +976,11 @@ const ConstructionDashboard = () => {
                         </tr>
                       ) : (
                         filteredProjects.map((project) => (
-                          <tr key={project._id} className="hover:bg-gray-50">
+                          <tr 
+                            key={project._id} 
+                            className="hover:bg-gray-50 cursor-pointer"
+                            onClick={() => navigate(`/projects/${project._id}`)}
+                          >
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900">{project.name}</div>
                             </td>
@@ -995,19 +1009,28 @@ const ConstructionDashboard = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                               <button 
-                                onClick={() => navigate(`/projects/${project._id}`)} 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/projects/${project._id}`);
+                                }} 
                                 className="text-blue-600 hover:text-blue-900"
                               >
                                 View
                               </button>
                               <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(project);
+                                }}
                                 className="text-yellow-600 hover:text-yellow-900"
-                                onClick={() => handleEdit(project)}
                               >
                                 Edit
                               </button>
                               <button
-                                onClick={() => confirmDelete(project)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  confirmDelete(project);
+                                }}
                                 className="text-red-600 hover:text-red-900"
                               >
                                 Delete
